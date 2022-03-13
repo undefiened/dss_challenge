@@ -1,0 +1,494 @@
+syntax = "proto3";
+
+package vrppb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+
+message VertiportReservation {
+    string vertiportid = 1;
+    string reservationtype = 2;
+    Time time_start = 3;
+    Time time_end = 4;
+}
+
+message Time {
+    string format = 1;
+
+    // RFC3339-formatted time/date string.  The time zone must be 'Z'.
+    google.protobuf.Timestamp value = 2;
+}
+
+message VertiportConstraintReference {
+    string id = 1;
+
+    string manager = 2;
+
+    // Opaque version number of this constraint.  Populated only when the ConstraintReference
+    // is managed by the USS retrieving or providing it.  Not populated when the
+    // ConstraintReference is not managed by the USS retrieving or providing it (instead, the
+    // USS must obtain the OVN from the details retrieved from the managing USS).
+    string ovn = 3;
+    Time time_end = 4;
+    Time time_start = 5;
+    string uss_availability = 6;
+    string uss_base_url = 7;
+
+    // Numeric version of this constraint which increments upon each change in the constraint,
+    // regardless of whether any field of the constraint reference changes.  A USS with the
+    // details of this constraint when it was at a particular version does not need to retrieve
+    // the details again until the version changes.
+    int32 version = 8;
+}
+
+message CreateVertiportConstraintReferenceRequest {
+    // EntityID of the constraint.
+    string entityid = 1;
+
+    // Request body.
+    PutVertiportConstraintReferenceParameters params = 2;
+}
+
+// Parameters for a request to create/update a ConstraintReference in the DSS.
+message PutVertiportConstraintReferenceParameters {
+    repeated VertiportReservation vertiport_reservation = 1;
+    string uss_base_url = 2;
+}
+
+message ChangeVertiportConstraintReferenceResponse {
+    VertiportConstraintReference constraint_reference = 1;
+
+    // DSS subscribers that this client now has the obligation to notify of the constraint changes just made.  This client must call POST for each provided URL according to the USS-USS `/uss/v1/constraints` path API.  The client's own subscriptions will also be included in this list.
+    repeated VertiportSubscriberToNotify subscribers = 2;
+}
+
+message VertiportSubscriptionState {
+    int32 notification_index = 1;
+    string subscription_id = 2;
+}
+
+message VertiportSubscriberToNotify {
+    // Subscription(s) prompting this notification.
+    repeated VertiportSubscriptionState subscriptions = 1;
+    string uss_base_url = 2;
+}
+
+message CreateVertiportOperationalIntentReferenceRequest {
+    // EntityID of the operational intent.
+    string entityid = 1;
+
+    // Request body.
+    PutVertiportOperationalIntentReferenceParameters params = 2;
+}
+
+message PutVertiportOperationalIntentReferenceParameters {
+    repeated VertiportReservation vertiport_reservation = 1;
+
+    repeated string key = 2;
+
+    ImplicitVertiportSubscriptionParameters new_subscription = 3;
+    string state = 4;
+
+    string subscription_id = 5;
+    string uss_base_url = 6;
+}
+
+message ImplicitVertiportSubscriptionParameters {
+    bool notify_for_constraints = 1;
+
+    string uss_base_url = 2;
+}
+
+message ChangeVertiportOperationalIntentReferenceResponse {
+    VertiportOperationalIntentReference operational_intent_reference = 1;
+
+    repeated VertiportSubscriberToNotify subscribers = 2;
+}
+
+message VertiportOperationalIntentReference {
+    string id = 1;
+
+    string manager = 2;
+
+    string ovn = 3;
+    string state = 4;
+
+    string subscription_id = 5;
+
+    Time time_end = 6;
+
+    Time time_start = 7;
+    string uss_availability = 8;
+    string uss_base_url = 9;
+
+    int32 version = 10;
+}
+
+message CreateVertiportSubscriptionRequest {
+    PutVertiportSubscriptionParameters params = 1;
+
+    string subscriptionid = 2;
+}
+
+message PutVertiportSubscriptionParameters {
+    VertiportReservation vertiport_reservation = 1;
+
+    bool notify_for_constraints = 2;
+
+    bool notify_for_operational_intents = 3;
+    string uss_base_url = 4;
+}
+
+message PutVertiportSubscriptionResponse {
+    repeated VertiportConstraintReference constraint_references = 1;
+
+    repeated VertiportOperationalIntentReference operational_intent_references = 2;
+    VertiportSubscription subscription = 3;
+}
+
+message VertiportSubscription {
+    repeated string dependent_operational_intents = 1;
+    string id = 2;
+
+    bool implicit_subscription = 3;
+    int32 notification_index = 4;
+
+    bool notify_for_constraints = 5;
+
+    bool notify_for_operational_intents = 6;
+
+    Time time_end = 7;
+
+    Time time_start = 8;
+    string uss_base_url = 9;
+
+    string version = 10;
+}
+
+message DeleteVertiportConstraintReferenceRequest {
+    // EntityID of the constraint.
+    string entityid = 1;
+
+    // Opaque version number of the existing operational intent reference.
+    string ovn = 2;
+}
+
+message DeleteVertiportOperationalIntentReferenceRequest {
+    // EntityID of the operational intent.
+    string entityid = 1;
+
+    // Opaque version number of the existing operational intent reference.
+    string ovn = 2;
+}
+
+message QueryVertiportConstraintReferenceParameters {
+    VertiportReservation reservation_of_interest = 1;
+}
+
+message QueryVertiportConstraintReferencesRequest {
+    // Request body.
+    QueryVertiportConstraintReferenceParameters params = 1;
+}
+
+message DeleteVertiportSubscriptionRequest {
+    // SubscriptionID of the subscription of interest.
+    string subscriptionid = 1;
+
+    // Version of the subscription to be modified.
+    string version = 2;
+}
+
+message DeleteVertiportSubscriptionResponse {
+    VertiportSubscription subscription = 1;
+}
+
+message GetVertiportConstraintReferenceRequest {
+    // EntityID of the constraint.
+    string entityid = 1;
+}
+
+message GetVertiportConstraintReferenceResponse {
+    VertiportConstraintReference constraint_reference = 1;
+}
+
+message GetVertiportOperationalIntentReferenceRequest {
+    // EntityID of the operational intent.
+    string entityid = 1;
+}
+
+message GetVertiportOperationalIntentReferenceResponse {
+    VertiportOperationalIntentReference operational_intent_reference = 1;
+}
+
+message GetVertiportSubscriptionRequest {
+    // SubscriptionID of the subscription of interest.
+    string subscriptionid = 1;
+}
+
+message GetVertiportSubscriptionResponse {
+    VertiportSubscription subscription = 1;
+}
+
+message QueryVertiportConstraintReferencesResponse {
+    // ConstraintReferences in the area of interest.
+    repeated VertiportConstraintReference constraint_references = 1;
+}
+
+message QueryVertiportOperationalIntentReferenceResponse {
+    // OperationalIntentReferences in the area of interest.
+    repeated VertiportOperationalIntentReference operational_intent_references = 1;
+}
+
+message QueryVertiportOperationalIntentReferencesRequest {
+    // Request body.
+    QueryVertiportOperationalIntentReferenceParameters params = 1;
+}
+
+// Parameters for a request to find OperationalIntentReferences matching the provided criteria.
+message QueryVertiportOperationalIntentReferenceParameters {
+    VertiportReservation vertiport_reservation_of_interest = 1;
+}
+
+// Parameters for a request to find subscriptions matching the provided criteria.
+message QueryVertiportSubscriptionParameters {
+    VertiportReservation vertiport_reservation_of_interest = 1;
+}
+
+message QueryVertiportSubscriptionsRequest {
+    // Request body.
+    QueryVertiportSubscriptionParameters params = 1;
+}
+
+// Response to DSS query for subscriptions in a particular vertiport area.
+message QueryVertiportSubscriptionsResponse {
+    // Subscriptions that overlap the specified vertiports areas.
+    repeated VertiportSubscription subscriptions = 1;
+}
+
+message UpdateVertiportConstraintReferenceRequest {
+    // EntityID of the constraint.
+    string entityid = 1;
+
+    // Opaque version number of the existing operational intent reference.
+    string ovn = 2;
+
+    // Request body.
+    PutVertiportConstraintReferenceParameters params = 3;
+}
+
+message UpdateVertiportOperationalIntentReferenceRequest {
+    // EntityID of the operational intent.
+    string entityid = 1;
+
+    // Opaque version number of the existing operational intent reference.
+    string ovn = 2;
+
+    // Request body.
+    PutVertiportOperationalIntentReferenceParameters params = 3;
+}
+
+message UpdateVertiportSubscriptionRequest {
+    // Request body.
+    PutVertiportSubscriptionParameters params = 1;
+
+    // SubscriptionID of the subscription of interest.
+    string subscriptionid = 2;
+
+    // Version of the subscription to be modified.
+    string version = 3;
+}
+
+
+
+
+service UTMAPIVertiportsService {
+    // Create the specified constraint reference in the DSS.
+    rpc CreateVertiportConstraintReference(CreateVertiportConstraintReferenceRequest) returns (ChangeVertiportConstraintReferenceResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/constraint_references/{entityid}"
+            body: "params"
+        };
+    }
+
+    // Create the specified operational intent reference in the DSS.
+    rpc CreateVertiportOperationalIntentReference(CreateVertiportOperationalIntentReferenceRequest) returns (ChangeVertiportOperationalIntentReferenceResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/operational_intent_references/{entityid}"
+            body: "params"
+        };
+    }
+
+    // Create the specified subscription in the DSS.
+    //
+    // Create a subscription.
+    //
+    // Subscription notifications are only triggered by (and contain full information of) changes to, creation of, or deletion of, Entities referenced by or stored in the DSS; they do not involve any data transfer (such as remote ID telemetry updates) apart from Entity information.
+    rpc CreateVertiportSubscription(CreateVertiportSubscriptionRequest) returns (PutVertiportSubscriptionResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/subscriptions/{subscriptionid}"
+            body: "params"
+        };
+    }
+
+    // Delete the specified constraint reference from the DSS.
+    rpc DeleteVertiportConstraintReference(DeleteVertiportConstraintReferenceRequest) returns (ChangeVertiportConstraintReferenceResponse) {
+        option (google.api.http) = {
+            delete: "/dss/v1/vertiport/constraint_references/{entityid}/{ovn}"
+        };
+    }
+
+    // Remove the specified operational intent reference from the DSS.
+    rpc DeleteVertiportOperationalIntentReference(DeleteVertiportOperationalIntentReferenceRequest) returns (ChangeVertiportOperationalIntentReferenceResponse) {
+        option (google.api.http) = {
+            delete: "/dss/v1/vertiport/operational_intent_references/{entityid}/{ovn}"
+        };
+    }
+
+    // Remove the specified subscription from the DSS.
+    //
+    // The standard requires each operational intent to have a subscription that cover the 4D volume of the operational intent.  If a USS attempts to delete a subscription upon which an operational intent depends, the deletion will be rejected by the DSS as a bad request.
+    rpc DeleteSubscription(DeleteVertiportSubscriptionRequest) returns (DeleteVertiportSubscriptionResponse) {
+        option (google.api.http) = {
+            delete: "/dss/v1/vertiport/subscriptions/{subscriptionid}/{version}"
+        };
+    }
+
+    // Retrieve the specified constraint reference from the DSS.
+    rpc GetVertiportConstraintReference(GetVertiportConstraintReferenceRequest) returns (GetVertiportConstraintReferenceResponse) {
+        option (google.api.http) = {
+            get: "/dss/v1/vertiport/constraint_references/{entityid}"
+        };
+    }
+
+    // Retrieve the specified operational intent reference from the DSS.
+    rpc GetVertiportOperationalIntentReference(GetVertiportOperationalIntentReferenceRequest) returns (GetVertiportOperationalIntentReferenceResponse) {
+        option (google.api.http) = {
+            get: "/dss/v1/vertiport/operational_intent_references/{entityid}"
+        };
+    }
+
+    // Retrieve the specified subscription from the DSS.
+    //
+    // Retrieve a specific subscription.
+    rpc GetVertiportSubscription(GetVertiportSubscriptionRequest) returns (GetVertiportSubscriptionResponse) {
+        option (google.api.http) = {
+            get: "/dss/v1/vertiport/subscriptions/{subscriptionid}"
+        };
+    }
+
+    // Get availability status of a USS.
+    //
+    // Get availability status of a USS.
+    // Leo: I think we can use the default one
+    // TODO: remove
+//    rpc GetUssAvailability(GetUssAvailabilityRequest) returns (UssAvailabilityStatusResponse) {
+//        option (google.api.http) = {
+//            get: "/dss/v1/uss_availability/{uss_id}"
+//        };
+//    }
+
+    // Report information about communication issues to a DSS.
+    //
+    // Report issues to a DSS. Data sent to this endpoint is archived.
+    // Leo: I think we can use the default one
+    // TODO: remove
+//    rpc MakeDssReport(MakeVertiportDssReportRequest) returns (VertiportErrorReport) {
+//        option (google.api.http) = {
+//            post: "/dss/v1/vertiport/reports"
+//            body: "params"
+//        };
+//    }
+
+    // Query all constraint references in the specified area/volume from the DSS.
+    //
+    // Note that this endpoint does not produce any mutations in the DSS
+    // despite using the HTTP POST verb.  The HTTP GET verb is traditionally
+    // used for operations like this one, but requiring or using a request body
+    // for HTTP GET requests is non-standard and not supported by some
+    // architectures.  POST is used here instead of GET to ensure robust
+    // support for the use of a request body.
+    rpc QueryVertiportConstraintReferences(QueryVertiportConstraintReferencesRequest) returns (QueryVertiportConstraintReferencesResponse) {
+        option (google.api.http) = {
+            post: "/dss/v1/vertiport/constraint_references/query"
+            body: "params"
+        };
+    }
+
+    // Query all operational intent references in the specified area/volume/time from the DSS.
+    //
+    // Note that this endpoint does not produce any mutations in the DSS
+    // despite using the HTTP POST verb.  The HTTP GET verb is traditionally
+    // used for operations like this one, but requiring or using a request body
+    // for HTTP GET requests is non-standard and not supported by some
+    // architectures.  POST is used here instead of GET to ensure robust
+    // support for the use of a request body.
+    rpc QueryVertiportOperationalIntentReferences(QueryVertiportOperationalIntentReferencesRequest) returns (QueryVertiportOperationalIntentReferenceResponse) {
+        option (google.api.http) = {
+            post: "/dss/v1/vertiport/operational_intent_references/query"
+            body: "params"
+        };
+    }
+
+    // Query all subscriptions in the specified area/volume from the DSS.
+    //
+    // Query subscriptions intersecting an area of interest.  Subscription
+    // notifications are only triggered by (and contain full information of) changes to,
+    // creation of, or deletion of, Entities referenced by or stored in the DSS;
+    // they do not involve any data transfer (such as remote ID telemetry updates) apart
+    // from Entity information.
+    //
+    // Note that this parameter is a JSON object (in the 'request-body'). Note that either
+    // or both of the 'altitude' and 'time' values may be omitted from this parameter.
+    //
+    // Only subscriptions belonging to the caller are returned.  This endpoint would be
+    // used if a USS lost track of subscriptions they had created and/or wanted to resolve
+    // an error indicating that they had too many existing subscriptions in an area.
+    rpc QueryVertiportSubscriptions(QueryVertiportSubscriptionsRequest) returns (QueryVertiportSubscriptionsResponse) {
+        option (google.api.http) = {
+            post: "/dss/v1/vertiport/subscriptions/query"
+            body: "params"
+        };
+    }
+
+    // Set availability status of a USS.
+    //
+    // Set availability status of a USS.
+    // TODO: remove
+//    rpc SetUssAvailability(SetUssAvailabilityRequest) returns (UssAvailabilityStatusResponse) {
+//        option (google.api.http) = {
+//            put: "/dss/v1/vertiport/uss_availability/{uss_id}"
+//            body: "params"
+//        };
+//    }
+
+    // Update the specified constraint reference in the DSS.
+    rpc UpdateVertiportConstraintReference(UpdateVertiportConstraintReferenceRequest) returns (ChangeVertiportConstraintReferenceResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/constraint_references/{entityid}/{ovn}"
+            body: "params"
+        };
+    }
+
+    // Update the specified operational intent reference in the DSS.
+    rpc UpdateVertiportOperationalIntentReference(UpdateVertiportOperationalIntentReferenceRequest) returns (ChangeVertiportOperationalIntentReferenceResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/operational_intent_references/{entityid}/{ovn}"
+            body: "params"
+        };
+    }
+
+    // Update the specified subscription in the DSS.
+    //
+    // Update a subscription.
+    //
+    // Subscription notifications are only triggered by (and contain full information of) changes to, creation of, or deletion of, Entities referenced by or stored in the DSS; they do not involve any data transfer (such as remote ID telemetry updates) apart from Entity information.
+    //
+    // The standard requires each operational intent to have a subscription that cover the 4D volume of the operational intent.  If a USS attempts to update a subscription upon which an operational intent depends, and this update would cause the operational intent to lose subscription coverage, the update will be rejected by the DSS as a bad request.
+    rpc UpdateVertiportSubscription(UpdateVertiportSubscriptionRequest) returns (PutVertiportSubscriptionResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/subscriptions/{subscriptionid}/{version}"
+            body: "params"
+        };
+    }
+}
