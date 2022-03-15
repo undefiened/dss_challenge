@@ -99,6 +99,22 @@ pkg/api/v1/scdpb/scd.pb.gw.go: pkg/api/v1/scdpb/scd.proto pkg/api/v1/scdpb/scd.p
 		-I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
 		--grpc-gateway_out=logtostderr=true,allow_delete_body=true:. $<
 
+pkg/api/v1/vrppb/vrp.pb.go: pkg/api/v1/vrppb/vrp.proto generator
+	docker run -v$(CURDIR):/src:delegated -w /src $(GENERATOR_TAG) protoc \
+		-I/usr/include \
+		-I. \
+		-I/go/src \
+		-I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
+		--go_out=plugins=grpc:. $<
+
+pkg/api/v1/vrppb/vrp.pb.gw.go: pkg/api/v1/vrppb/vrp.proto pkg/api/v1/vrppb/vrp.pb.go generator
+	docker run -v$(CURDIR):/src:delegated -w /src $(GENERATOR_TAG) protoc \
+		-I/usr/include \
+		-I. \
+		-I/go/src \
+		-I/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.14.3/third_party/googleapis \
+		--grpc-gateway_out=logtostderr=true,allow_delete_body=true:. $<
+
 interfaces/scd_adjusted.yaml: interfaces/astm-utm/Protocol/utm.yaml
 	./interfaces/adjuster/adjust_openapi_yaml.sh ./interfaces/astm-utm/Protocol/utm.yaml ./interfaces/scd_adjusted.yaml
 
@@ -113,7 +129,7 @@ generator:
 	docker build --rm -t $(GENERATOR_TAG) build/generator
 
 .PHONY: protos
-protos: pkg/api/v1/auxpb/aux_service.pb.gw.go pkg/api/v1/ridpb/rid.pb.gw.go pkg/api/v1/scdpb/scd.pb.gw.go
+protos: pkg/api/v1/auxpb/aux_service.pb.gw.go pkg/api/v1/ridpb/rid.pb.gw.go pkg/api/v1/scdpb/scd.pb.gw.go pkg/api/v1/vrppb/vrp.pb.gw.go
 
 # --- Targets to autogenerate Go code for OpenAPI-defined interfaces ---
 .PHONY: apis

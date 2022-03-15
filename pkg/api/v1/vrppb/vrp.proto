@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package vrppb;
 
+option go_package = "pkg/api/v1/vrppb";
+
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
