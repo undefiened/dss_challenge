@@ -1,12 +1,15 @@
 package models
 
-import "time"
-
-type VertiportPosition = int
+import (
+	"github.com/golang/protobuf/ptypes"
+	"github.com/interuss/dss/pkg/api/v1/vrppb"
+	"github.com/interuss/stacktrace"
+	"time"
+)
 
 const (
-	FATO         VertiportPosition = 0
-	ParkingStand                   = 1
+	FATO         int32 = 0
+	ParkingStand       = 1
 )
 
 type Vertiport struct {
@@ -16,8 +19,35 @@ type Vertiport struct {
 }
 
 type VertiportReservation struct {
-	Vertiport         *Vertiport
-	VertiportPosition *VertiportPosition
-	StartTime         *time.Time
-	EndTime           *time.Time
+	VertiportID   ID
+	VertiportZone int32
+	StartTime     *time.Time
+	EndTime       *time.Time
+}
+
+func VertiportReservationFromVRPProto(vr *vrppb.VertiportReservation) (*VertiportReservation, error) {
+	result := &VertiportReservation{
+		VertiportZone: vr.GetReservedZone(),
+		VertiportID:   ID(vr.GetVertiportid()),
+	}
+
+	if startTime := vr.GetTimeStart(); startTime != nil {
+		st := startTime.GetValue()
+		ts, err := ptypes.Timestamp(st)
+		if err != nil {
+			return nil, stacktrace.Propagate(err, "Error converting start time from proto")
+		}
+		result.StartTime = &ts
+	}
+
+	if endTime := vr.GetTimeEnd(); endTime != nil {
+		et := endTime.GetValue()
+		ts, err := ptypes.Timestamp(et)
+		if err != nil {
+			return nil, stacktrace.Propagate(err, "Error converting end time from proto")
+		}
+		result.EndTime = &ts
+	}
+
+	return result, nil
 }

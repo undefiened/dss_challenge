@@ -10,7 +10,7 @@ import "google/protobuf/timestamp.proto";
 
 message VertiportReservation {
     string vertiportid = 1;
-    string reservationtype = 2;
+    int32 reserved_zone = 2;
     Time time_start = 3;
     Time time_end = 4;
 }
