@@ -18,7 +18,7 @@ import (
 
 // DeleteOperationalIntentReference deletes a single operational intent ref for a given ID at
 // the specified version.
-func (a *Server) DeleteOperationalIntentReference(ctx context.Context, req *vrppb.DeleteVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
+func (a *Server) DeleteVertiportOperationalIntentReference(ctx context.Context, req *vrppb.DeleteVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
 	// Retrieve OperationalIntent ID
 	id, err := dssmodels.IDFromString(req.GetEntityid())
 	if err != nil {
@@ -131,7 +131,7 @@ func (a *Server) DeleteOperationalIntentReference(ctx context.Context, req *vrpp
 }
 
 // GetOperationalIntentReference returns a single operation intent ref for the given ID.
-func (a *Server) GetOperationalIntentReference(ctx context.Context, req *vrppb.GetVertiportOperationalIntentReferenceRequest) (*vrppb.GetVertiportOperationalIntentReferenceResponse, error) {
+func (a *Server) GetVertiportOperationalIntentReference(ctx context.Context, req *vrppb.GetVertiportOperationalIntentReferenceRequest) (*vrppb.GetVertiportOperationalIntentReferenceResponse, error) {
 	id, err := dssmodels.IDFromString(req.GetEntityid())
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format: `%s`", req.GetEntityid())
@@ -178,7 +178,7 @@ func (a *Server) GetOperationalIntentReference(ctx context.Context, req *vrppb.G
 
 // QueryOperationalIntentsReferences queries existing operational intent refs in the given
 // bounds.
-func (a *Server) QueryOperationalIntentReferences(ctx context.Context, req *vrppb.QueryVertiportOperationalIntentReferencesRequest) (*vrppb.QueryVertiportOperationalIntentReferenceResponse, error) {
+func (a *Server) QueryVertiportOperationalIntentReferences(ctx context.Context, req *vrppb.QueryVertiportOperationalIntentReferencesRequest) (*vrppb.QueryVertiportOperationalIntentReferenceResponse, error) {
 	// Retrieve the area of interest parameter
 	aoi := req.GetParams().GetVertiportReservationOfInterest()
 	if aoi == nil {
@@ -229,17 +229,17 @@ func (a *Server) QueryOperationalIntentReferences(ctx context.Context, req *vrpp
 	return response, nil
 }
 
-func (a *Server) CreateOperationalIntentReference(ctx context.Context, req *vrppb.CreateVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
-	return a.PutOperationalIntentReference(ctx, req.GetEntityid(), "", req.GetParams())
+func (a *Server) CreateVertiportOperationalIntentReference(ctx context.Context, req *vrppb.CreateVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
+	return a.PutVertiportOperationalIntentReference(ctx, req.GetEntityid(), "", req.GetParams())
 }
 
-func (a *Server) UpdateOperationalIntentReference(ctx context.Context, req *vrppb.UpdateVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
-	return a.PutOperationalIntentReference(ctx, req.GetEntityid(), req.Ovn, req.GetParams())
+func (a *Server) UpdateVertiportOperationalIntentReference(ctx context.Context, req *vrppb.UpdateVertiportOperationalIntentReferenceRequest) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
+	return a.PutVertiportOperationalIntentReference(ctx, req.GetEntityid(), req.Ovn, req.GetParams())
 }
 
 // PutOperationalIntentReference inserts or updates an Operational Intent.
 // If the ovn argument is empty (""), it will attempt to create a new Operational Intent.
-func (a *Server) PutOperationalIntentReference(ctx context.Context, entityid string, ovn string, params *vrppb.PutVertiportOperationalIntentReferenceParameters) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
+func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, entityid string, ovn string, params *vrppb.PutVertiportOperationalIntentReferenceParameters) (*vrppb.ChangeVertiportOperationalIntentReferenceResponse, error) {
 	id, err := dssmodels.IDFromString(entityid)
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format: `%s`", entityid)

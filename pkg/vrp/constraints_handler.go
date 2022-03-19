@@ -15,7 +15,7 @@ import (
 
 // DeleteConstraintReference deletes a single constraint ref for a given ID at
 // the specified version.
-func (a *Server) DeleteConstraintReference(ctx context.Context, req *vrppb.DeleteVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
+func (a *Server) DeleteVertiportConstraintReference(ctx context.Context, req *vrppb.DeleteVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
 	// Retrieve Constraint ID
 	id, err := dssmodels.IDFromString(req.GetEntityid())
 	if err != nil {
@@ -97,7 +97,7 @@ func (a *Server) DeleteConstraintReference(ctx context.Context, req *vrppb.Delet
 }
 
 // GetConstraintReference returns a single constraint ref for the given ID.
-func (a *Server) GetConstraintReference(ctx context.Context, req *vrppb.GetVertiportConstraintReferenceRequest) (*vrppb.GetVertiportConstraintReferenceResponse, error) {
+func (a *Server) GetVertiportConstraintReference(ctx context.Context, req *vrppb.GetVertiportConstraintReferenceRequest) (*vrppb.GetVertiportConstraintReferenceResponse, error) {
 	id, err := dssmodels.IDFromString(req.GetEntityid())
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format: `%s`", req.GetEntityid())
@@ -144,17 +144,17 @@ func (a *Server) GetConstraintReference(ctx context.Context, req *vrppb.GetVerti
 	return response, nil
 }
 
-func (a *Server) CreateConstraintReference(ctx context.Context, req *vrppb.CreateVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
-	return a.PutConstraintReference(ctx, req.GetEntityid(), "", req.GetParams())
+func (a *Server) CreateVertiportConstraintReference(ctx context.Context, req *vrppb.CreateVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
+	return a.PutVertiportConstraintReference(ctx, req.GetEntityid(), "", req.GetParams())
 }
 
-func (a *Server) UpdateConstraintReference(ctx context.Context, req *vrppb.UpdateVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
-	return a.PutConstraintReference(ctx, req.GetEntityid(), req.GetOvn(), req.GetParams())
+func (a *Server) UpdateVertiportConstraintReference(ctx context.Context, req *vrppb.UpdateVertiportConstraintReferenceRequest) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
+	return a.PutVertiportConstraintReference(ctx, req.GetEntityid(), req.GetOvn(), req.GetParams())
 }
 
 // PutConstraintReference inserts or updates a Constraint.
 // If the ovn argument is empty (""), it will attempt to create a new Constraint.
-func (a *Server) PutConstraintReference(ctx context.Context, entityid string, ovn string, params *vrppb.PutVertiportConstraintReferenceParameters) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
+func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid string, ovn string, params *vrppb.PutVertiportConstraintReferenceParameters) (*vrppb.ChangeVertiportConstraintReferenceResponse, error) {
 	id, err := dssmodels.IDFromString(entityid)
 
 	if err != nil {
@@ -287,7 +287,7 @@ func (a *Server) PutConstraintReference(ctx context.Context, entityid string, ov
 
 // QueryConstraintReferences queries existing contraint refs in the given
 // bounds.
-func (a *Server) QueryConstraintReferences(ctx context.Context, req *vrppb.QueryVertiportConstraintReferencesRequest) (*vrppb.QueryVertiportConstraintReferencesResponse, error) {
+func (a *Server) QueryVertiportConstraintReferences(ctx context.Context, req *vrppb.QueryVertiportConstraintReferencesRequest) (*vrppb.QueryVertiportConstraintReferencesResponse, error) {
 	// Retrieve the area of interest parameter
 	aoi := req.GetParams().ReservationOfInterest
 	if aoi == nil {
