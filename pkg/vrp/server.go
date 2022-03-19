@@ -1,7 +1,9 @@
 package vrp
 
 import (
+	"github.com/interuss/dss/pkg/api/v1/vrppb"
 	"github.com/interuss/dss/pkg/auth"
+	vrpmodels "github.com/interuss/dss/pkg/vrp/models"
 	vrpstore "github.com/interuss/dss/pkg/vrp/store"
 	"time"
 )
@@ -39,4 +41,25 @@ func (a *Server) AuthScopes() map[auth.Operation]auth.KeyClaimedScopesValidator 
 		"/vrppb.UTMAPIVertiportsService/UpdateVertiportOperationalIntentReference": auth.RequireAnyScope(strategicCoordinationScope, conformanceMonitoringSAScope),
 		"/vrppb.UTMAPIVertiportsService/UpdateVertiportSubscription":               auth.RequireAnyScope(strategicCoordinationScope, constraintProcessingScope),
 	}
+}
+
+func makeSubscribersToNotify(subscriptions []*vrpmodels.VertiportSubscription) []*vrppb.VertiportSubscriberToNotify {
+	result := []*vrppb.VertiportSubscriberToNotify{}
+
+	subscriptionsByURL := map[string][]*vrppb.VertiportSubscriptionState{}
+	for _, sub := range subscriptions {
+		subState := &vrppb.VertiportSubscriptionState{
+			SubscriptionId:    sub.ID.String(),
+			NotificationIndex: int32(sub.NotificationIndex),
+		}
+		subscriptionsByURL[sub.USSBaseURL] = append(subscriptionsByURL[sub.USSBaseURL], subState)
+	}
+	for url, states := range subscriptionsByURL {
+		result = append(result, &vrppb.VertiportSubscriberToNotify{
+			UssBaseUrl:    url,
+			Subscriptions: states,
+		})
+	}
+
+	return result
 }

@@ -7,6 +7,18 @@ option go_package = "pkg/api/v1/vrppb";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
+// Data provided when an airspace conflict was encountered.
+message AirspaceConflictResponse {
+    // Human-readable message indicating what error occurred and/or why.
+    string message = 1;
+
+    // List of constraint references for which current proof of knowledge was not provided.  If this field is present and contains elements, the calling USS should query the details URLs for these constraints to obtain their details and correct OVNs.  The OVNs can be used to update the key, at which point the USS may retry this call.
+    repeated VertiportConstraintReference missing_constraints = 2;
+
+    // List of operational intent references for which current proof of knowledge was not provided.  If this field is present and contains elements, the calling USS should query the details URLs for these operational intents to obtain their details and correct OVNs.  The OVNs can be used to update the key, at which point the USS may retry this call.
+    repeated VertiportOperationalIntentReference missing_operational_intents = 3;
+}
+
 
 message VertiportReservation {
     string vertiportid = 1;
@@ -54,7 +66,7 @@ message CreateVertiportConstraintReferenceRequest {
 
 // Parameters for a request to create/update a ConstraintReference in the DSS.
 message PutVertiportConstraintReferenceParameters {
-    repeated VertiportReservation vertiport_reservation = 1;
+    VertiportReservation vertiport_reservation = 1;
     string uss_base_url = 2;
 }
 
@@ -85,7 +97,7 @@ message CreateVertiportOperationalIntentReferenceRequest {
 }
 
 message PutVertiportOperationalIntentReferenceParameters {
-    repeated VertiportReservation vertiport_reservation = 1;
+    VertiportReservation vertiport_reservation = 1;
 
     repeated string key = 2;
 

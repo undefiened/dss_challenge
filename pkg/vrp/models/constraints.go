@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/golang/geo/s2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/interuss/dss/pkg/api/v1/vrppb"
 	dsserr "github.com/interuss/dss/pkg/errors"
@@ -20,9 +19,8 @@ type VertiportConstraint struct {
 	StartTime       *time.Time
 	EndTime         *time.Time
 	USSBaseURL      string
-	AltitudeLower   *float32
-	AltitudeUpper   *float32
-	Cells           s2.CellUnion
+	VertiportID     dssmodels.ID
+	VertiportZone   int32
 }
 
 // ToProto converts the Constraint to its proto API format
