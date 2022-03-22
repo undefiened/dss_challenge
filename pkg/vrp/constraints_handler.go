@@ -167,8 +167,6 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 		return nil, stacktrace.NewErrorWithCode(dsserr.PermissionDenied, "Missing manager from context")
 	}
 
-	//var extents = make([]*dssmodels.Volume4D, len(params.GetExtents()))
-
 	if len(params.UssBaseUrl) == 0 {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing required UssBaseUrl")
 	}
@@ -180,7 +178,6 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 		}
 	}
 
-	// TODO: factor out logic below into common multi-vol4d parser and reuse with PutOperationReference
 	extent := params.GetVertiportReservation()
 	uExtent, err := dssmodels.VertiportReservationFromVRPProto(extent)
 	if err != nil {

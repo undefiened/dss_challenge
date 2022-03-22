@@ -90,6 +90,17 @@ docker run --rm --name scd-db-manager \
 	--cockroach_host crdb
 
 sleep 1
+echo "Bootstrapping VRP Database tables"
+docker run --rm --name vrp-db-manager \
+	--link dss-crdb-for-debugging:crdb \
+	-v "$(pwd)/build/deploy/db_schemas/vrp:/db-schemas/vrp" \
+	local-interuss-dss-image \
+	/usr/bin/db-manager \
+	--schemas_dir db-schemas/vrp \
+	--db_version "latest" \
+	--cockroach_host crdb
+
+sleep 1
 echo " ------------ CORE SERVICE ---------------- "
 echo "Cleaning up any pre-existing core-service container"
 docker rm -f core-service-for-testing &> /dev/null || echo "No core service to clean up"
@@ -152,6 +163,7 @@ docker run --link dummy-oauth-for-testing:oauth \
 	--junitxml=/app/test_result \
 	--dss-endpoint http://local-gateway:8082 \
 	--rid-auth "DummyOAuth(http://oauth:8085/token,sub=fake_uss)" \
+	--vrp-auth "DummyOAuth(http://oauth:8085/token,sub=fake_uss)" \
 	--scd-auth1 "DummyOAuth(http://oauth:8085/token,sub=fake_uss)" \
 	--scd-auth2 "DummyOAuth(http://oauth:8085/token,sub=fake_uss2)"	\
 	--scd-api-version 1.0.0

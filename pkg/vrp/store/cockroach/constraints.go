@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	nConstraintFields = 10
+	nConstraintFields = 9
 )
 
 var (
@@ -34,7 +34,7 @@ func init() {
 	constraintFieldsWithIndices[5] = "vertiport_zone"
 	constraintFieldsWithIndices[6] = "starts_at"
 	constraintFieldsWithIndices[7] = "ends_at"
-	constraintFieldsWithIndices[9] = "updated_at"
+	constraintFieldsWithIndices[8] = "updated_at"
 
 	constraintFieldsWithoutPrefix = strings.Join(
 		constraintFieldsWithIndices[:], ",",
@@ -126,7 +126,7 @@ func (c *repo) UpsertVertiportConstraint(ctx context.Context, s *vrpmodels.Verti
 		  vrp_constraints
 		  (%s)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, transaction_timestamp())
+			($1, $2, $3, $4, $5, $6, $7, $8, transaction_timestamp())
 		RETURNING
 			%s`, constraintFieldsWithoutPrefix, constraintFieldsWithPrefix)
 	)
@@ -187,7 +187,7 @@ func (c *repo) SearchVertiportConstraints(ctx context.Context, reservation *dssm
 			FROM
 				vrp_constraints
 			WHERE
-			  vertiport_id == $1 && vertiport_zone == $2
+			  vertiport_id = $1 AND vertiport_zone = $2
 			AND
 				COALESCE(starts_at <= $4, true)
 			AND

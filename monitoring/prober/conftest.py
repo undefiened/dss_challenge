@@ -3,17 +3,20 @@ from typing import Callable, Optional
 
 from monitoring.monitorlib.infrastructure import DSSTestSession, AsyncUTMTestSession
 from monitoring.monitorlib import auth, rid, scd
+from monitoring.prober import vrp
 from monitoring.prober.infrastructure import add_test_result, IDFactory, ResourceType, VersionString
 
 import pytest
 
 
 OPT_RID_AUTH = 'rid_auth'
+OPT_VRP_AUTH = 'vrp_auth'
 OPT_SCD_AUTH1 = 'scd_auth1'
 OPT_SCD_AUTH2 = 'scd_auth2'
 
 BASE_URL_RID = '/v1/dss'
 BASE_URL_SCD = '/dss/v1'
+BASE_URL_VRP = '/dss/v1/vertiport'
 BASE_URL_AUX = '/aux/v1'
 
 
@@ -40,6 +43,12 @@ def pytest_addoption(parser):
     help='Auth spec (see Authorization section of README.md) for performing remote ID actions in the DSS',
     metavar='SPEC',
     dest='rid_auth')
+
+  parser.addoption(
+      '--vrp-auth',
+      help='Auth spec (see Authorization section of README.md) for performing vertiport actions in the DSS',
+      metavar='SPEC',
+      dest='vrp_auth')
 
   parser.addoption(
     '--scd-auth1',
@@ -137,6 +146,10 @@ def scd_session(pytestconfig) -> DSSTestSession:
   return make_session(pytestconfig, BASE_URL_SCD, OPT_SCD_AUTH1)
 
 @pytest.fixture(scope='session')
+def vrp_session(pytestconfig) -> DSSTestSession:
+    return make_session(pytestconfig, BASE_URL_VRP, OPT_VRP_AUTH)
+
+@pytest.fixture(scope='session')
 def scd_session_async(pytestconfig):
   session = make_session_async(pytestconfig, '/dss/v1', 'scd_auth1')
   yield session
@@ -181,6 +194,14 @@ def subscriber(pytestconfig) -> Optional[str]:
     scd2_sub = scd_session2.auth_adapter.get_sub()
     if scd2_sub:
       return scd2_sub
+
+  if pytestconfig.getoption(OPT_VRP_AUTH):
+    vrp_session = make_session(pytestconfig, BASE_URL_VRP, OPT_VRP_AUTH)
+    vrp_session.get('/status', scope=vrp.SCOPE_VRP)
+    vrp_sub = vrp_session.auth_adapter.get_sub()
+    if vrp_sub:
+        return vrp_sub
+
   return None
 
 

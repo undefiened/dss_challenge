@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/interuss/dss/pkg/api/v1/vrppb"
 	"io"
 	"net/http"
 	"net/textproto"
@@ -37,6 +38,7 @@ var (
 	coreService     = flag.String("core-service", "", "Endpoint for core service. Only to be set if run in proxy mode")
 	profServiceName = flag.String("gcp_prof_service_name", "", "Service name for the Go profiler")
 	enableSCD       = flag.Bool("enable_scd", false, "Enables the Strategic Conflict Detection API")
+	enableVRP       = flag.Bool("enable_vrp", true, "Enables the Vertiport Management API")
 )
 
 const (
@@ -104,6 +106,19 @@ func RunHTTPProxy(ctx context.Context, ctxCanceler func(), address, endpoint str
 		logger.Info("config", zap.Any("scd", "enabled"))
 	} else {
 		logger.Info("config", zap.Any("scd", "disabled"))
+	}
+
+	logger.Info("Registering VRP service")
+	if *enableVRP {
+		if err := vrppb.RegisterUTMAPIVertiportsServiceHandlerFromEndpoint(ctx, grpcMux, endpoint, opts); err != nil {
+			if strings.Contains(err.Error(), "context deadline exceeded") {
+				return stacktrace.PropagateWithCode(err, codeRetryable, "Failed to connect to core-service for vertiport management")
+			}
+			return stacktrace.Propagate(err, "Error registering VRP service handler")
+		}
+		logger.Info("config", zap.Any("vrp", "enabled"))
+	} else {
+		logger.Info("config", zap.Any("vrp", "disabled"))
 	}
 
 	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

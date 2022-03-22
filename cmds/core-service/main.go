@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/interuss/dss/pkg/api/v1/vrppb"
+	"github.com/interuss/dss/pkg/vrp"
 	"log"
 	"net"
 	"net/url"
@@ -31,6 +33,7 @@ import (
 	"github.com/interuss/dss/pkg/scd"
 	scdc "github.com/interuss/dss/pkg/scd/store/cockroach"
 	"github.com/interuss/dss/pkg/validations"
+	vrpc "github.com/interuss/dss/pkg/vrp/store/cockroach"
 	"github.com/interuss/stacktrace"
 	"github.com/robfig/cron/v3"
 
@@ -53,6 +56,7 @@ var (
 	dumpRequests         = flag.Bool("dump_requests", false, "Log request and response protos")
 	profServiceName      = flag.String("gcp_prof_service_name", "", "Service name for the Go profiler")
 	enableSCD            = flag.Bool("enable_scd", false, "Enables the Strategic Conflict Detection API")
+	enableVRP            = flag.Bool("enable_vrp", true, "Enables the Vertiport Management API")
 	enableHTTP           = flag.Bool("enable_http", false, "Enables http scheme for Strategic Conflict Detection API")
 	locality             = flag.String("locality", "", "self-identification string used as CRDB table writer column")
 	garbageCollectorSpec = flag.String("garbage_collector_spec", "@every 30m", "Garbage collector schedule. The value must follow robfig/cron format. See https://godoc.org/github.com/robfig/cron#hdr-Usage for more detail.")
@@ -199,6 +203,40 @@ func createSCDServer(ctx context.Context, logger *zap.Logger) (*scd.Server, erro
 	}, nil
 }
 
+func createVRPServer(ctx context.Context, logger *zap.Logger) (*vrp.Server, error) {
+	connectParameters := flags.ConnectParameters()
+	connectParameters.DBName = vrpc.DatabaseName
+	vrpCrdb, err := cockroach.Dial(ctx, connectParameters)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "Failed to connect to strategic conflict detection database; verify your database configuration is current with https://github.com/interuss/dss/tree/master/build#upgrading-database-schemas")
+	}
+
+	vrpStore, err := vrpc.NewStore(ctx, vrpCrdb, logger)
+	if err != nil {
+		// TODO: More robustly detect failure to create SCD server is due to a problem that may be temporary
+		if strings.Contains(err.Error(), "connect: connection refused") || strings.Contains(err.Error(), "database \"vrp\" does not exist") {
+			vrpCrdb.Pool.Close()
+			return nil, stacktrace.PropagateWithCode(err, codeRetryable, "Failed to connect to CRDB server for strategic conflict detection store")
+		}
+		return nil, stacktrace.Propagate(err, "Failed to create strategic conflict detection store")
+	}
+
+	// schedule period tasks for SCD Server
+	vrpCron := cron.New()
+	// schedule printing of DB connection stats every minute for the underlying storage for RID Server
+	if _, err := vrpCron.AddFunc("@every 1m", func() { getDBStats(ctx, vrpCrdb, scdc.DatabaseName) }); err != nil {
+		return nil, stacktrace.Propagate(err, "Failed to schedule periodic db stat check to %s", scdc.DatabaseName)
+	}
+
+	vrpCron.Start()
+
+	return &vrp.Server{
+		Store:      vrpStore,
+		Timeout:    *timeout,
+		EnableHTTP: *enableHTTP,
+	}, nil
+}
+
 // RunGRPCServer starts the example gRPC service.
 // "network" and "address" are passed to net.Listen.
 func RunGRPCServer(ctx context.Context, ctxCanceler func(), address string, locality string) error {
@@ -213,6 +251,7 @@ func RunGRPCServer(ctx context.Context, ctxCanceler func(), address string, loca
 	var (
 		ridServer *rid.Server
 		scdServer *scd.Server
+		vrpServer *vrp.Server
 		auxServer = &aux.Server{}
 	)
 
@@ -239,6 +278,19 @@ func RunGRPCServer(ctx context.Context, ctxCanceler func(), address string, loca
 
 		scopesValidators = auth.MergeOperationsAndScopesValidators(
 			scopesValidators, scdServer.AuthScopes(),
+		)
+	}
+
+	if *enableVRP {
+		server, err := createVRPServer(ctx, logger)
+		if err != nil {
+			ridServer.Cron.Stop()
+			return stacktrace.Propagate(err, "Failed to create vertiport management server")
+		}
+		vrpServer = server
+
+		scopesValidators = auth.MergeOperationsAndScopesValidators(
+			scopesValidators, vrpServer.AuthScopes(),
 		)
 	}
 
@@ -291,6 +343,13 @@ func RunGRPCServer(ctx context.Context, ctxCanceler func(), address string, loca
 		scdpb.RegisterUTMAPIUSSDSSAndUSSUSSServiceServer(s, scdServer)
 	} else {
 		logger.Info("config", zap.Any("scd", "disabled"))
+	}
+
+	if *enableVRP {
+		logger.Info("config", zap.Any("vrp", "enabled"))
+		vrppb.RegisterUTMAPIVertiportsServiceServer(s, vrpServer)
+	} else {
+		logger.Info("config", zap.Any("vrp", "disabled"))
 	}
 
 	signals := make(chan os.Signal)

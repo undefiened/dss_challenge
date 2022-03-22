@@ -280,7 +280,7 @@ func (c *repo) SearchVertiportSubscriptions(ctx context.Context, v4d *dssmodels.
 			FROM
 				vrp_subscriptions
 				WHERE
-					vertiport_id == $1 && vertiport_zone == $2
+					vertiport_id = $1 AND vertiport_zone = $2
 				AND
 					COALESCE(starts_at <= $4, true)
 				AND

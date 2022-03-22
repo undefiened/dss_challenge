@@ -16,14 +16,14 @@ import (
 
 const (
 	// currentMajorSchemaVersion is the current major schema version.
-	currentMajorSchemaVersion = 3
+	currentMajorSchemaVersion = 1
 )
 
 var (
 	// DefaultClock is what is used as the Store's clock, returned from Dial.
 	DefaultClock = clockwork.NewRealClock()
 
-	// DatabaseName is the name of database storing strategic conflict detection data.
+	// DatabaseName is the name of database storing vertiport management data.
 	DatabaseName = "vrp"
 )
 
@@ -35,7 +35,7 @@ type repo struct {
 	clock  clockwork.Clock
 }
 
-// Store is an implementation of an scd.Store using
+// Store is an implementation of a vrp.Store using
 // a CockroachDB database.
 type Store struct {
 	db     *cockroach.DB
