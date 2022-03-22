@@ -3,7 +3,9 @@ package cockroach
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-semver/semver"
@@ -38,8 +40,14 @@ type (
 		SSL                SSL
 		MaxOpenConns       int
 		MaxConnIdleSeconds int
+		MaxRetries         int
 	}
 )
+
+// DB models a connection to a CRDB instance.
+type DB struct {
+	Pool *pgxpool.Pool
+}
 
 func parseIntOrDefault(port string, defaultPort int64) int64 {
 	p, err := strconv.ParseInt(port, 10, 16)
@@ -68,61 +76,81 @@ func connectParametersFromMap(m map[string]string) ConnectParameters {
 	}
 }
 
+// formatDSN constructs a DSN string from a key value map.
+func formatDSN(dsnMap map[string]string) string {
+	d := make([]string, 0)
+	for key, value := range dsnMap {
+		if value != "" {
+			d = append(d, fmt.Sprintf("%s=%s", key, value))
+		}
+	}
+	sort.Strings(d)
+	return strings.Join(d, " ")
+}
+
 // BuildURI returns a URI built from p.
-func (p ConnectParameters) BuildURI() (string, error) {
-	an := p.ApplicationName
-	if an == "" {
-		an = "dss"
-	}
-	h := p.Host
-	if h == "" {
-		return "", stacktrace.NewError("Missing crdb hostname")
-	}
-	port := p.Port
-	if port == 0 {
-		return "", stacktrace.NewError("Missing crdb port")
-	}
-	u := p.Credentials.Username
+func (cp ConnectParameters) BuildDSN() (string, error) {
+	dsnMap := make(map[string]string)
+
+	u := cp.Credentials.Username
 	if u == "" {
 		return "", stacktrace.NewError("Missing crdb user")
 	}
-	ssl := p.SSL.Mode
-	if ssl == "" {
+	dsnMap["user"] = u
+
+	h := cp.Host
+	if h == "" {
+		return "", stacktrace.NewError("Missing crdb hostname")
+	}
+	dsnMap["host"] = h
+
+	port := cp.Port
+	if port == 0 {
+		return "", stacktrace.NewError("Missing crdb port")
+	}
+	dsnMap["port"] = fmt.Sprintf("%d", port)
+
+	an := cp.ApplicationName
+	if an == "" {
+		an = "dss"
+	}
+	dsnMap["application_name"] = an
+
+	dsnMap["dbname"] = cp.DBName
+
+	sslMode := cp.SSL.Mode
+	if sslMode == "" {
 		return "", stacktrace.NewError("Missing crdb ssl_mode")
 	}
-	db := p.DBName
-	if db != "" {
-		db = fmt.Sprintf("/%s", db)
+	dsnMap["sslmode"] = sslMode
+
+	dsnMap["pool_max_conns"] = fmt.Sprintf("%d", cp.MaxOpenConns)
+
+	if sslMode == "disable" {
+		return formatDSN(dsnMap), nil
 	}
-	if ssl == "disable" {
-		return fmt.Sprintf("postgresql://%s@%s:%d%s?application_name=%s&sslmode=disable", u, h, port, db, an), nil
-	}
-	dir := p.SSL.Dir
+
+	dir := cp.SSL.Dir
 	if dir == "" {
 		return "", stacktrace.NewError("Missing crdb ssl_dir")
 	}
+	dsnMap["sslrootcert"] = fmt.Sprintf("%s/ca.crt", dir)
+	dsnMap["sslcert"] = fmt.Sprintf("%s/client.%s.crt", dir, u)
+	dsnMap["sslkey"] = fmt.Sprintf("%s/client.%s.key", dir, u)
 
-	return fmt.Sprintf(
-		"postgresql://%s@%s:%d%s?application_name=%s&sslmode=%s&sslrootcert=%s/ca.crt&sslcert=%s/client.%s.crt&sslkey=%s/client.%s.key",
-		u, h, port, db, an, ssl, dir, dir, u, dir, u,
-	), nil
-}
-
-// DB models a connection to a CRDB instance.
-type DB struct {
-	Pool *pgxpool.Pool
+	return formatDSN(dsnMap), nil
 }
 
 // Dial returns a DB instance connected to a cockroach instance available at
 // "uri".
 // https://www.cockroachlabs.com/docs/stable/connection-parameters.html
 func Dial(ctx context.Context, connParams ConnectParameters) (*DB, error) {
-	uri, err := connParams.BuildURI()
+	dsn, err := connParams.BuildDSN()
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "Error building URI")
+		return nil, stacktrace.Propagate(err, "Failed to create connection config for pgx")
 	}
 
-	config, err := pgxpool.ParseConfig(uri)
+	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "Failed to parse connection config for pgx")
 	}
@@ -143,19 +171,6 @@ func Dial(ctx context.Context, connParams ConnectParameters) (*DB, error) {
 	return &DB{
 		Pool: db,
 	}, nil
-}
-
-// Connect to a database using the specified connection parameters
-func ConnectTo(ctx context.Context, connectParameters ConnectParameters) (*DB, error) {
-	uri, err := connectParameters.BuildURI()
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "Error building CockroachDB connection URI")
-	}
-	db, err := Dial(ctx, connectParameters)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "Error dialing CockroachDB database at %s", uri)
-	}
-	return db, nil
 }
 
 // GetVersion returns the Schema Version of the requested DB Name

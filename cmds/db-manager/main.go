@@ -69,7 +69,7 @@ func main() {
 	connectParameters := flags.ConnectParameters()
 	connectParameters.ApplicationName = "db-manager"
 	connectParameters.DBName = "postgres" // Use an initial database that is known to always be present
-	crdb, err := cockroach.ConnectTo(context.Background(), connectParameters)
+	crdb, err := cockroach.Dial(context.Background(), connectParameters)
 	if err != nil {
 		log.Panicf("Failed to connect to database with %+v: %v", connectParameters, err)
 	}
@@ -156,7 +156,7 @@ func main() {
 			// RID database changes from `defaultdb` to `rid` when moving up to 4.0.0
 			dbName = "rid"
 		}
-		if dbName == "defaultdb" && currentVersion.String() == "4.0.0" && newCurrentStepIndex < currentStepIndex {
+		if dbName == "rid" && currentVersion.String() == "4.0.0" && newCurrentStepIndex < currentStepIndex {
 			// RID database changes from `rid` to `defaultdb` when moving down from 4.0.0
 			dbName = "defaultdb"
 		}
