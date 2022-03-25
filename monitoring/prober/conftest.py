@@ -11,6 +11,7 @@ import pytest
 
 OPT_RID_AUTH = 'rid_auth'
 OPT_VRP_AUTH = 'vrp_auth'
+OPT_VRP_AUTH2 = 'vrp_auth2'
 OPT_SCD_AUTH1 = 'scd_auth1'
 OPT_SCD_AUTH2 = 'scd_auth2'
 
@@ -50,6 +51,12 @@ def pytest_addoption(parser):
       metavar='SPEC',
       dest='vrp_auth')
 
+  parser.addoption(
+      '--vrp-auth2',
+      help='Auth spec (see Authorization section of README.md) for performing vertiport actions in the DSS',
+      metavar='SPEC',
+      dest='vrp_auth2')
+  
   parser.addoption(
     '--scd-auth1',
     help='Auth spec (see Authorization section of README.md) for performing primary strategic deconfliction actions in the DSS',
@@ -150,6 +157,10 @@ def vrp_session(pytestconfig) -> DSSTestSession:
     return make_session(pytestconfig, BASE_URL_VRP, OPT_VRP_AUTH)
 
 @pytest.fixture(scope='session')
+def vrp_session2(pytestconfig) -> DSSTestSession:
+    return make_session(pytestconfig, BASE_URL_VRP, OPT_VRP_AUTH2)
+
+@pytest.fixture(scope='session')
 def scd_session_async(pytestconfig):
   session = make_session_async(pytestconfig, '/dss/v1', 'scd_auth1')
   yield session
@@ -201,6 +212,13 @@ def subscriber(pytestconfig) -> Optional[str]:
     vrp_sub = vrp_session.auth_adapter.get_sub()
     if vrp_sub:
         return vrp_sub
+
+  if pytestconfig.getoption(OPT_VRP_AUTH2):
+    vrp_session2 = make_session(pytestconfig, BASE_URL_VRP, OPT_VRP_AUTH2)
+    vrp_session2.get('/status', scope=vrp.SCOPE_VRP)
+    vrp2_sub = vrp_session2.auth_adapter.get_sub()
+    if vrp2_sub:
+        return vrp2_sub
 
   return None
 
