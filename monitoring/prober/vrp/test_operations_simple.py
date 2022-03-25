@@ -29,7 +29,7 @@ class Time(ImplicitDict):
     ''' A class to hold Time details '''
     value: StringBasedDateTime
     format:Literal['RFC3339']
-    
+
 def make_time(t: datetime) -> Time:
     return Time(value=t.isoformat() + 'Z', format='RFC3339')
 
@@ -52,19 +52,19 @@ sub2_version = None
 def _make_op1_request():
   time_start = datetime.datetime.utcnow() + datetime.timedelta(minutes=20)
   time_end = time_start + datetime.timedelta(minutes=60)
-  
+
   return {
-    'extents':
-        [{'time_start': make_time(time_start),
+    'vertiport_reservation':
+        {'time_start': make_time(time_start),
          'time_end': make_time(time_end),
          'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
          'vertiport_zone': 0,
-        }],
+        },
     #'extents': [{'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
     #             'vertiport_zone': 0,
     #             'time_start': {'value': '2022-03-24T23:56:40.026696Z', 'format': 'RFC3339'},
     #             'time_end': {'value': '2022-03-25T00:56:40.026696Z', 'format': 'RFC3339'}
-    #             }], 
+    #             }],
 
     'old_version': 0,
     'state': 'Accepted',
@@ -80,7 +80,7 @@ def _make_op2_request():
   time_start = datetime.datetime.utcnow()
   time_end = time_start + datetime.timedelta(minutes=60)
   return {
-    'extents': {
+    'vertiport_reservation': {
             'time_start': make_time(time_start),
             'time_end': make_time(time_end),
             'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
@@ -137,7 +137,7 @@ def delete_operation_if_exists(id: str, vrp_session: DSSTestSession):
     resp = vrp_session.get(url.format(id), scope=SCOPE_VRP)
     if resp.status_code == 200:
         ovn = resp.json()['operational_intent_reference']['ovn']
-        resp = vrp_session.delete('/operational_intent_references/{}/{}'.format(id, ovn))
+        resp = vrp_session.delete('/operational_intent_references/{}/{}'.format(id, ovn), scope=SCOPE_VRP)
         assert resp.status_code == 200, resp.content
     elif resp.status_code == 404:
         # As expected.
@@ -229,17 +229,17 @@ def test_op1_does_not_exist_query_2_v17(ids, vrp_session, vrp_session2):
 def test_create_op1_v17(ids, vrp_session, vrp_session2):
 
   id = ids(OP1_TYPE)
-  
+
   req = _make_op1_request()
   print(req)
-  
+
 
   resp = vrp_session.put('/operational_intent_references/{}'.format(id), json=req, scope=SCOPE_VRP)
-  
+
   print(resp.content)
-  
+
   assert resp.status_code == 200, resp.content
-  
+
 '''
   data = resp.json()
   op = data['operational_intent_reference']
@@ -255,7 +255,7 @@ def test_create_op1_v17(ids, vrp_session, vrp_session2):
 
   # Make sure the implicit Subscription exists when queried separately
   resp = vrp_session.get('/subscriptions/{}'.format(op['subscription_id']), scope=SCOPE_VRP)
-  
+
 
   assert resp.status_code == 200, resp.content
 

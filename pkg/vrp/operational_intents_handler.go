@@ -615,6 +615,8 @@ func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.Ge
 			NumberOfAvailablePlaces: vertiport.NumberOfParkingPlaces - numberOfUsedPlaces,
 			NumberOfPlaces:          vertiport.NumberOfParkingPlaces,
 		}
+
+		return nil
 	}
 
 	err = a.Store.Transact(ctx, action)

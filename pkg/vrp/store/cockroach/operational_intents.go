@@ -232,7 +232,7 @@ func (s *repo) searchOperationalIntents(ctx context.Context, q dsssql.Queryable,
 			FROM
 				vrp_operations
 			WHERE
-				vertiport_id == $1 && vertiport_zone == $2
+				vertiport_id = $1 AND vertiport_zone = $2
 			AND
 				COALESCE(vrp_operations.ends_at >= $3, true)
 			AND
