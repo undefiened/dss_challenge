@@ -71,11 +71,20 @@ type VertiportConstraint interface {
 	DeleteVertiportConstraint(ctx context.Context, id dssmodels.ID) error
 }
 
+type Vertiport interface {
+	GetVertiport(ctx context.Context, id dssmodels.ID) (*vrpmodels.Vertiport, error)
+
+	UpsertVertiport(ctx context.Context, constraint *vrpmodels.Vertiport) (*vrpmodels.Vertiport, error)
+
+	DeleteVertiport(ctx context.Context, id dssmodels.ID) error
+}
+
 // Repository aggregates all VRP-specific repo interfaces.
 type Repository interface {
 	VertiportOperationalIntent
 	VertiportSubscription
 	VertiportConstraint
+	Vertiport
 }
 
 // IncrementNotificationIndices is a utility function that extracts the IDs from

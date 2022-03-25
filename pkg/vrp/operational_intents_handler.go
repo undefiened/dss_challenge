@@ -2,6 +2,7 @@ package vrp
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes"
 	"time"
 
 	"github.com/google/uuid"
@@ -537,6 +538,83 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 		}
 
 		return nil
+	}
+
+	err = a.Store.Transact(ctx, action)
+	if err != nil {
+		return nil, err // No need to Propagate this error as this is not a useful stacktrace line
+	}
+
+	return response, nil
+}
+
+func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.GetNumberOfUsedParkingPlacesRequest) (*vrppb.GetNumberOfUsedParkingPlacesResponse, error) {
+	id, err := dssmodels.IDFromString(req.GetVertiportid())
+	if err != nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format: `%s`", req.GetVertiportid())
+	}
+
+	if req.GetTimeStart() == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Start time is missing")
+	}
+
+	if req.GetTimeEnd() == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "End time is missing")
+	}
+
+	st := req.GetTimeStart().GetValue()
+	startTime, err := ptypes.Timestamp(st)
+	if err != nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting start time from proto")
+	}
+
+	et := req.GetTimeStart().GetValue()
+	endTime, err := ptypes.Timestamp(et)
+	if err != nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting end time from proto")
+	}
+
+	var response *vrppb.GetNumberOfUsedParkingPlacesResponse
+	action := func(ctx context.Context, r repos.Repository) (err error) {
+		vertiport, err := r.GetVertiport(ctx, id)
+
+		if err != nil {
+			return stacktrace.Propagate(err, "Could not find Vertiport")
+		}
+
+		var numberOfUsedPlaces int32 = 0
+
+		constraints, err := r.SearchVertiportConstraints(ctx, &dssmodels.VertiportReservation{
+			VertiportID:   id,
+			VertiportZone: dssmodels.ParkingStand,
+			StartTime:     &startTime,
+			EndTime:       &endTime,
+		})
+
+		if err != nil {
+			return stacktrace.Propagate(err, "Error finding related vertiport constraints")
+		}
+
+		numberOfUsedPlaces = numberOfUsedPlaces + int32(len(constraints))
+
+		operationalIntents, err := r.SearchVertiportOperationalIntents(ctx, &dssmodels.VertiportReservation{
+			VertiportID:   id,
+			VertiportZone: dssmodels.ParkingStand,
+			StartTime:     &startTime,
+			EndTime:       &endTime,
+		})
+
+		numberOfUsedPlaces = numberOfUsedPlaces + int32(len(operationalIntents))
+
+		if err != nil {
+			return stacktrace.Propagate(err, "Error finding related vertiport constraints")
+		}
+
+		response = &vrppb.GetNumberOfUsedParkingPlacesResponse{
+			NumberOfUsedPlaces:      numberOfUsedPlaces,
+			NumberOfAvailablePlaces: vertiport.NumberOfParkingPlaces - numberOfUsedPlaces,
+			NumberOfPlaces:          vertiport.NumberOfParkingPlaces,
+		}
 	}
 
 	err = a.Store.Transact(ctx, action)

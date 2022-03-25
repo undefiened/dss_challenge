@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS vrp_constraints (
   CHECK (starts_at IS NULL OR ends_at IS NULL OR starts_at < ends_at)
 );
 
+CREATE TABLE IF NOT EXISTS vrp_vertiports (
+    id UUID PRIMARY KEY,
+    number_of_parking_places INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS schema_versions (
 	onerow_enforcer bool PRIMARY KEY DEFAULT TRUE CHECK(onerow_enforcer),
 	schema_version STRING NOT NULL

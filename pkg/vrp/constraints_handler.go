@@ -285,7 +285,7 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 // QueryConstraintReferences queries existing contraint refs in the given
 // bounds.
 func (a *Server) QueryVertiportConstraintReferences(ctx context.Context, req *vrppb.QueryVertiportConstraintReferencesRequest) (*vrppb.QueryVertiportConstraintReferencesResponse, error) {
-	// Retrieve the area of interest parameter
+	// Retrieve the reservation of interest parameter
 	aoi := req.GetParams().ReservationOfInterest
 	if aoi == nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing area_of_interest")

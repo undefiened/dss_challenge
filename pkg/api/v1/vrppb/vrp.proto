@@ -159,6 +159,8 @@ message PutVertiportSubscriptionResponse {
 
     repeated VertiportOperationalIntentReference operational_intent_references = 2;
     VertiportSubscription subscription = 3;
+
+    int32 number_of_parked_places = 4;
 }
 
 message VertiportSubscription {
@@ -314,6 +316,18 @@ message UpdateVertiportSubscriptionRequest {
 }
 
 
+message GetNumberOfUsedParkingPlacesRequest {
+    string vertiportid = 1;
+    Time time_start = 2;
+    Time time_end = 3;
+}
+
+message GetNumberOfUsedParkingPlacesResponse {
+    int32 number_of_used_places = 1;
+    int32 number_of_available_places = 2;
+    int32 number_of_places = 3;
+}
+
 
 
 service UTMAPIVertiportsService {
@@ -362,7 +376,7 @@ service UTMAPIVertiportsService {
     // Remove the specified subscription from the DSS.
     //
     // The standard requires each operational intent to have a subscription that cover the 4D volume of the operational intent.  If a USS attempts to delete a subscription upon which an operational intent depends, the deletion will be rejected by the DSS as a bad request.
-    rpc DeleteSubscription(DeleteVertiportSubscriptionRequest) returns (DeleteVertiportSubscriptionResponse) {
+    rpc DeleteVertiportSubscription(DeleteVertiportSubscriptionRequest) returns (DeleteVertiportSubscriptionResponse) {
         option (google.api.http) = {
             delete: "/dss/v1/vertiport/subscriptions/{subscriptionid}/{version}"
         };
@@ -388,6 +402,12 @@ service UTMAPIVertiportsService {
     rpc GetVertiportSubscription(GetVertiportSubscriptionRequest) returns (GetVertiportSubscriptionResponse) {
         option (google.api.http) = {
             get: "/dss/v1/vertiport/subscriptions/{subscriptionid}"
+        };
+    }
+
+    rpc GetNumberOfUsedParkingPlaces(GetNumberOfUsedParkingPlacesRequest) returns (GetNumberOfUsedParkingPlacesResponse) {
+        option (google.api.http) = {
+            get: "/dss/v1/vertiport/number_of_used_parking_places"
         };
     }
 

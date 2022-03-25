@@ -21,7 +21,7 @@ const (
 	maxClockSkew = time.Minute * 5
 )
 
-// VertiportSubscription represents an SCD subscription
+// VertiportSubscription represents a vertiport subscription
 type VertiportSubscription struct {
 	ID dssmodels.ID
 
