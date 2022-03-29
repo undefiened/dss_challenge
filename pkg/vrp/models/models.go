@@ -7,6 +7,7 @@ import (
 	"github.com/interuss/dss/pkg/api/v1/vrppb"
 	dssmodels "github.com/interuss/dss/pkg/models"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -155,6 +156,64 @@ func ComputeFreeTimePeriods(constraints []*VertiportConstraint, operationalInten
 	}
 
 	return resultingTimePeriods, nil
+}
+
+func ComputeNumberOfUsedParkingPlaces(constraints []*VertiportConstraint, operationalIntents []*VertiportOperationalIntent, timeStart time.Time, timeEnd time.Time) (int32, error) {
+	mainTimePeriod := TimePeriod{
+		From: &timeStart,
+		To:   &timeEnd,
+	}
+	busyTimePeriods := make([]*TimePeriod, len(constraints)+len(operationalIntents))
+
+	for _, constraint := range constraints {
+		busyTimePeriods = append(busyTimePeriods, &TimePeriod{
+			From: constraint.StartTime,
+			To:   constraint.EndTime,
+		})
+	}
+
+	for _, constraint := range operationalIntents {
+		busyTimePeriods = append(busyTimePeriods, &TimePeriod{
+			From: constraint.StartTime,
+			To:   constraint.EndTime,
+		})
+	}
+
+	type ChangeInNumberOfUsedPlaces struct {
+		Time   *time.Time
+		Change int
+	}
+
+	changes := make([]*ChangeInNumberOfUsedPlaces, 2*len(busyTimePeriods))
+
+	for _, tp := range busyTimePeriods {
+		if mainTimePeriod.IntersectsWith(tp) {
+			changes = append(changes, &ChangeInNumberOfUsedPlaces{
+				Time:   tp.From,
+				Change: 1,
+			}, &ChangeInNumberOfUsedPlaces{
+				Time:   tp.To,
+				Change: -1,
+			})
+		}
+	}
+
+	sort.Slice(changes, func(i, j int) bool {
+		return changes[i].Time.Before(*changes[j].Time)
+	})
+
+	numberOfUsedPlaces := 0
+	maxNumberOfUsedPlaces := 0
+
+	for _, change := range changes {
+		numberOfUsedPlaces = numberOfUsedPlaces + change.Change
+
+		if numberOfUsedPlaces > maxNumberOfUsedPlaces {
+			maxNumberOfUsedPlaces = numberOfUsedPlaces
+		}
+	}
+
+	return int32(maxNumberOfUsedPlaces), nil
 }
 
 // NewOVNFromTime encodes t as an OVN.

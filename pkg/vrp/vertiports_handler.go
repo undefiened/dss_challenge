@@ -46,8 +46,6 @@ func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.Ge
 			return stacktrace.Propagate(err, "Could not find Vertiport")
 		}
 
-		var numberOfUsedPlaces int32 = 0
-
 		constraints, err := r.SearchVertiportConstraints(ctx, &dssmodels.VertiportReservation{
 			VertiportID:   id,
 			VertiportZone: dssmodels.ParkingStand,
@@ -59,8 +57,6 @@ func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.Ge
 			return stacktrace.Propagate(err, "Error finding related vertiport constraints")
 		}
 
-		numberOfUsedPlaces = numberOfUsedPlaces + int32(len(constraints))
-
 		operationalIntents, err := r.SearchVertiportOperationalIntents(ctx, &dssmodels.VertiportReservation{
 			VertiportID:   id,
 			VertiportZone: dssmodels.ParkingStand,
@@ -68,10 +64,10 @@ func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.Ge
 			EndTime:       &endTime,
 		})
 
-		numberOfUsedPlaces = numberOfUsedPlaces + int32(len(operationalIntents))
+		numberOfUsedPlaces, err := vrpmodels.ComputeNumberOfUsedParkingPlaces(constraints, operationalIntents, startTime, endTime)
 
 		if err != nil {
-			return stacktrace.Propagate(err, "Error finding related vertiport constraints")
+			return stacktrace.Propagate(err, "Error computing the number of used parking places")
 		}
 
 		response = &vrppb.GetNumberOfUsedParkingPlacesResponse{
