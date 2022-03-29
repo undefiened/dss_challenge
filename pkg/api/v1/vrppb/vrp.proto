@@ -374,6 +374,14 @@ message DeleteVertiportRequest {
     string vertiportid = 1;
 }
 
+message GetVertiportRequest {
+    string vertiportid = 1;
+}
+
+message GetVertiportResponse {
+    Vertiport vertiport = 1;
+}
+
 message DeleteVertiportResponse {
     Vertiport vertiport = 1;
 }
@@ -384,6 +392,12 @@ service UTMAPIVertiportsService {
         option (google.api.http) = {
             post: "/dss/v1/vertiport/fato_available_times/{vertiportid}"
             body: "params"
+        };
+    }
+
+    rpc GetVertiport(GetVertiportRequest) returns (GetVertiportResponse) {
+        option (google.api.http) = {
+            get: "/dss/v1/vertiport/{vertiportid}"
         };
     }
 

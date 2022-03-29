@@ -265,3 +265,41 @@ func (a *Server) DeleteVertiport(ctx context.Context, req *vrppb.DeleteVertiport
 
 	return response, nil
 }
+
+//TODO: test this
+func (a *Server) GetVertiport(ctx context.Context, req *vrppb.GetVertiportRequest) (*vrppb.GetVertiportResponse, error) {
+	// Retrieve VertiportSubscription ID
+	id, err := dssmodels.IDFromString(req.GetVertiportid())
+	if err != nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format")
+	}
+
+	var response *vrppb.GetVertiportResponse
+	action := func(ctx context.Context, r repos.Repository) (err error) {
+		// Check to make sure it's ok to delete this VertiportSubscription
+		vrp, err := r.GetVertiport(ctx, id)
+		switch {
+		case err != nil:
+			return stacktrace.Propagate(err, "Could not get Vertiport from repo")
+		case vrp == nil: // Return a 404 here.
+			return stacktrace.NewErrorWithCode(dsserr.NotFound, "Vertiport %s not found", id.String())
+		}
+
+		// Create response for client
+		response = &vrppb.GetVertiportResponse{
+			Vertiport: &vrppb.Vertiport{
+				Id:                    req.GetVertiportid(),
+				NumberOfParkingPlaces: vrp.NumberOfParkingPlaces,
+			},
+		}
+
+		return nil
+	}
+
+	err = a.Store.Transact(ctx, action)
+	if err != nil {
+		return nil, err // No need to Propagate this error as this is not a useful stacktrace line
+	}
+
+	return response, nil
+}

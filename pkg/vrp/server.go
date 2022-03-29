@@ -33,6 +33,7 @@ func (a *Server) AuthScopes() map[auth.Operation]auth.KeyClaimedScopesValidator 
 		"/vrppb.UTMAPIVertiportsService/GetVertiportConstraintReference":           auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/GetVertiportOperationalIntentReference":    auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/GetVertiportSubscription":                  auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/GetVertiport":                              auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/QueryVertiportConstraintReferences":        auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/QueryVertiportOperationalIntentReferences": auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/QueryVertiportSubscriptions":               auth.RequireAnyScope(vertiportScope),

@@ -101,6 +101,60 @@ func local_request_UTMAPIVertiportsService_GetVertiportFATOAvailableTimes_0(ctx 
 
 }
 
+func request_UTMAPIVertiportsService_GetVertiport_0(ctx context.Context, marshaler runtime.Marshaler, client UTMAPIVertiportsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetVertiportRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["vertiportid"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vertiportid")
+	}
+
+	protoReq.Vertiportid, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vertiportid", err)
+	}
+
+	msg, err := client.GetVertiport(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_UTMAPIVertiportsService_GetVertiport_0(ctx context.Context, marshaler runtime.Marshaler, server UTMAPIVertiportsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetVertiportRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["vertiportid"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vertiportid")
+	}
+
+	protoReq.Vertiportid, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vertiportid", err)
+	}
+
+	msg, err := server.GetVertiport(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 func request_UTMAPIVertiportsService_DeleteVertiport_0(ctx context.Context, marshaler runtime.Marshaler, client UTMAPIVertiportsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeleteVertiportRequest
 	var metadata runtime.ServerMetadata
@@ -1331,6 +1385,26 @@ func RegisterUTMAPIVertiportsServiceHandlerServer(ctx context.Context, mux *runt
 
 	})
 
+	mux.Handle("GET", pattern_UTMAPIVertiportsService_GetVertiport_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_UTMAPIVertiportsService_GetVertiport_0(rctx, inboundMarshaler, server, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_UTMAPIVertiportsService_GetVertiport_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("DELETE", pattern_UTMAPIVertiportsService_DeleteVertiport_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1772,6 +1846,26 @@ func RegisterUTMAPIVertiportsServiceHandlerClient(ctx context.Context, mux *runt
 
 	})
 
+	mux.Handle("GET", pattern_UTMAPIVertiportsService_GetVertiport_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_UTMAPIVertiportsService_GetVertiport_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_UTMAPIVertiportsService_GetVertiport_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("DELETE", pattern_UTMAPIVertiportsService_DeleteVertiport_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -2158,6 +2252,8 @@ func RegisterUTMAPIVertiportsServiceHandlerClient(ctx context.Context, mux *runt
 var (
 	pattern_UTMAPIVertiportsService_GetVertiportFATOAvailableTimes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"dss", "v1", "vertiport", "fato_available_times", "vertiportid"}, "", runtime.AssumeColonVerbOpt(true)))
 
+	pattern_UTMAPIVertiportsService_GetVertiport_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"dss", "v1", "vertiport", "vertiportid"}, "", runtime.AssumeColonVerbOpt(true)))
+
 	pattern_UTMAPIVertiportsService_DeleteVertiport_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"dss", "v1", "vertiport", "vertiportid"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_UTMAPIVertiportsService_UpdateVertiport_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"dss", "v1", "vertiport", "vertiportid"}, "", runtime.AssumeColonVerbOpt(true)))
@@ -2199,6 +2295,8 @@ var (
 
 var (
 	forward_UTMAPIVertiportsService_GetVertiportFATOAvailableTimes_0 = runtime.ForwardResponseMessage
+
+	forward_UTMAPIVertiportsService_GetVertiport_0 = runtime.ForwardResponseMessage
 
 	forward_UTMAPIVertiportsService_DeleteVertiport_0 = runtime.ForwardResponseMessage
 
