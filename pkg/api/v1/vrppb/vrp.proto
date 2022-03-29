@@ -159,8 +159,6 @@ message PutVertiportSubscriptionResponse {
 
     repeated VertiportOperationalIntentReference operational_intent_references = 2;
     VertiportSubscription subscription = 3;
-
-    int32 number_of_parked_places = 4;
 }
 
 message VertiportSubscription {
@@ -330,7 +328,86 @@ message GetNumberOfUsedParkingPlacesResponse {
 
 
 
+message GetVertiportFATOAvailableTimesRequestParams {
+    Time time_start = 1;
+    Time time_end = 2;
+}
+
+message GetVertiportFATOAvailableTimesRequest {
+    string vertiportid = 1;
+    GetVertiportFATOAvailableTimesRequestParams params = 2;
+}
+
+message TimePeriod {
+    Time from = 1;
+    Time to = 2;
+}
+
+message GetVertiportFATOAvailableTimesResponse {
+    repeated TimePeriod time_period = 1;
+}
+
+message CreateVertiportRequestParams {
+    int32 number_of_parking_places = 1;
+}
+
+message CreateVertiportRequest {
+    string vertiportid = 1;
+    CreateVertiportRequestParams params = 2;
+}
+
+message UpdateVertiportRequest {
+    string vertiportid = 1;
+    CreateVertiportRequestParams params = 2;
+}
+
+message PutVertiportResponse {
+    Vertiport vertiport = 3;
+}
+
+message Vertiport {
+    string id = 1;
+    int32 number_of_parking_places = 2;
+}
+
+message DeleteVertiportRequest {
+    string vertiportid = 1;
+}
+
+message DeleteVertiportResponse {
+    Vertiport vertiport = 1;
+}
+
+
 service UTMAPIVertiportsService {
+    rpc GetVertiportFATOAvailableTimes(GetVertiportFATOAvailableTimesRequest) returns (GetVertiportFATOAvailableTimesResponse) {
+        option (google.api.http) = {
+            post: "/dss/v1/vertiport/fato_available_times/{vertiportid}"
+            body: "params"
+        };
+    }
+
+    rpc DeleteVertiport(DeleteVertiportRequest) returns (DeleteVertiportResponse) {
+        option (google.api.http) = {
+            delete: "/dss/v1/vertiport/{vertiportid}"
+        };
+    }
+
+    rpc UpdateVertiport(UpdateVertiportRequest) returns (PutVertiportResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/{vertiportid}"
+            body: "params"
+        };
+    }
+
+    rpc CreateVertiport(CreateVertiportRequest) returns (PutVertiportResponse) {
+        option (google.api.http) = {
+            put: "/dss/v1/vertiport/{vertiportid}"
+            body: "params"
+        };
+    }
+
+
     // Create the specified constraint reference in the DSS.
     rpc CreateVertiportConstraintReference(CreateVertiportConstraintReferenceRequest) returns (ChangeVertiportConstraintReferenceResponse) {
         option (google.api.http) = {
@@ -411,28 +488,6 @@ service UTMAPIVertiportsService {
         };
     }
 
-    // Get availability status of a USS.
-    //
-    // Get availability status of a USS.
-    // Leo: I think we can use the default one
-    // TODO: remove
-//    rpc GetUssAvailability(GetUssAvailabilityRequest) returns (UssAvailabilityStatusResponse) {
-//        option (google.api.http) = {
-//            get: "/dss/v1/uss_availability/{uss_id}"
-//        };
-//    }
-
-    // Report information about communication issues to a DSS.
-    //
-    // Report issues to a DSS. Data sent to this endpoint is archived.
-    // Leo: I think we can use the default one
-    // TODO: remove
-//    rpc MakeDssReport(MakeVertiportDssReportRequest) returns (VertiportErrorReport) {
-//        option (google.api.http) = {
-//            post: "/dss/v1/vertiport/reports"
-//            body: "params"
-//        };
-//    }
 
     // Query all constraint references in the specified area/volume from the DSS.
     //
