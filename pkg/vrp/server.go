@@ -25,9 +25,11 @@ func (a *Server) AuthScopes() map[auth.Operation]auth.KeyClaimedScopesValidator 
 		"/vrppb.UTMAPIVertiportsService/CreateVertiportConstraintReference":        auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/CreateVertiportOperationalIntentReference": auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/CreateVertiportSubscription":               auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/CreateVertiport":                           auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/DeleteVertiportConstraintReference":        auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/DeleteVertiportOperationalIntentReference": auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/DeleteVertiportSubscription":               auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/DeleteVertiport":                           auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/GetVertiportConstraintReference":           auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/GetVertiportOperationalIntentReference":    auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/GetVertiportSubscription":                  auth.RequireAnyScope(vertiportScope),
@@ -37,6 +39,9 @@ func (a *Server) AuthScopes() map[auth.Operation]auth.KeyClaimedScopesValidator 
 		"/vrppb.UTMAPIVertiportsService/UpdateVertiportConstraintReference":        auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/UpdateVertiportOperationalIntentReference": auth.RequireAnyScope(vertiportScope),
 		"/vrppb.UTMAPIVertiportsService/UpdateVertiportSubscription":               auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/UpdateVertiport":                           auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/GetVertiportFATOAvailableTimes":            auth.RequireAnyScope(vertiportScope),
+		"/vrppb.UTMAPIVertiportsService/GetNumberOfUsedParkingPlaces":              auth.RequireAnyScope(vertiportScope),
 	}
 }
 
