@@ -192,7 +192,7 @@ func (c *repo) SearchVertiportConstraints(ctx context.Context, reservation *dssm
 				COALESCE(starts_at <= $4, true)
 			AND
 				COALESCE(ends_at >= $3, true)
-			LIMIT $4`, constraintFieldsWithoutPrefix)
+			LIMIT $5`, constraintFieldsWithoutPrefix)
 	)
 
 	constraints, err := c.fetchConstraints(
