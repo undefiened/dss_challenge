@@ -265,14 +265,14 @@ func (a *Server) GetVertiportSubscription(ctx context.Context, req *vrppb.GetVer
 
 // QuerySubscriptions queries existing subscriptions in the given bounds.
 func (a *Server) QueryVertiportSubscriptions(ctx context.Context, req *vrppb.QueryVertiportSubscriptionsRequest) (*vrppb.QueryVertiportSubscriptionsResponse, error) {
-	// Retrieve the area of interest parameter
-	//aoi := req.GetParams().AreaOfInterest
-	//if aoi == nil {
-	//	return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing area_of_interest")
-	//}
+	// Retrieve the vertiport reservation of interest parameter
+	vroi := req.GetParams().VertiportReservationOfInterest
+	
+	if vroi == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiport_reservation_of_interest")
+	}
 
-	// Parse area of interest to common Volume4D
-	reservation, err := dssmodels.VertiportReservationFromVRPProto(req.GetParams().VertiportReservationOfInterest)
+	reservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to convert to internal geometry model")
 	}
