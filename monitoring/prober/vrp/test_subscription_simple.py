@@ -59,16 +59,16 @@ def _make_sub1_req():
   time_end = time_start + datetime.timedelta(minutes=60)
   
   req = {
-    'vertiport_reservation': {
-            'time_start': make_time(time_start),
-            'time_end': make_time(time_end),
-            'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-            'vertiport_zone': 0,
-        },
-    "uss_base_url": "https://example.com/foo",
-    "notify_for_constraints": False,
-    "notify_for_operational_intents": True,
-    'old_version': 0,
+      'vertiport_reservation': {
+          'time_start': make_time(time_start),
+          'time_end': make_time(time_end),
+          'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+          'vertiport_zone': 0,
+      },
+      'uss_base_url': "https://example.com/foo",
+      'notify_for_constraints': False,
+      'notify_for_operational_intents': True,
+      'old_version': 0,
   }
   return req
 
@@ -90,7 +90,6 @@ def _check_sub1(data, sub_id):
           or len(data['subscription']['dependent_operational_intents']) == 0)
 
 
-
 def test_sub_does_not_exist_get(ids, scd_api, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
@@ -101,12 +100,16 @@ def test_sub_does_not_exist_get(ids, scd_api, vrp_session, scope=SCOPE_VRP):
 def test_sub_does_not_exist_query(ids, scd_api, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
-
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(minutes=60)
-  req1 = _make_sub1_req()
-
-  resp = vrp_session.post('/subscriptions/query', json=req1, scope=SCOPE_VRP)
+  
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'vertiport_zone': 0,
+            }
+        }
+    }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
   assert ids(SUB_TYPE) not in [sub['id'] for sub in resp.json().get('subscriptions', [])]
 
@@ -140,21 +143,16 @@ def test_get_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
   
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(minutes=60)
-  
-  vertiport_req = {
-    'vertiport_reservation': {
-            'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'vertiport_zone': 0,
+            }
         }
-    }
-  
-  resp = vrp_session.post(
-      '/subscriptions/query',
-      json = vertiport_req,
-      scope=SCOPE_VRP)
-  if resp.status_code != 200:
-    print(resp.content)
+    }, scope=SCOPE_VRP)
+
   assert resp.status_code == 200, resp.content
   assert ids(SUB_TYPE) in [x['id'] for x in resp.json()['subscriptions']]
 
@@ -223,18 +221,15 @@ def test_get_deleted_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
 
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(minutes=60)
-
-  req1 = {
-    'vertiport_reservation': {
-            'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'vertiport_zone': 0,
+            }
         }
-    }
-
-  resp = vrp_session.post(
-    '/subscriptions/query',
-    json=req1, scope=SCOPE_VRP)
+    }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
   assert ids(SUB_TYPE) not in [x['id'] for x in resp.json()['subscriptions']]
 
