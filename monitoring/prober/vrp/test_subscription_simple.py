@@ -159,7 +159,6 @@ def test_get_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
   assert ids(SUB_TYPE) in [x['id'] for x in resp.json()['subscriptions']]
 
 
-
 def test_mutate_zone_sub(ids, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
