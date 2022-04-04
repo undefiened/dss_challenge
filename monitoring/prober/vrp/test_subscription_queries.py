@@ -1,14 +1,17 @@
-"""Strategic conflict detection Subscription query tests:
+"""Basic Subscription query tests:
 
-  - add a few Subscriptions spaced in time and vertiport ids/zones
-  - query with various combinations of arguments
+  - make sure the Subscription doesn't exist with get by vertiport id/zone search
+  - create the Subscription with a 60 minute length
+  - get by vertiport id/zone search
+  - get by vertiport id/zone + earliest time search
+  - get by vertiport id/zone + lateest time search
+  - delete
+  - make sure Subscription can't be found by vertiport id/zone search
 """
 
 import datetime
-from typing import Dict
-from typing import Literal, Optional
+from typing import Literal
 
-#from monitoring.monitorlib import scd
 from monitoring.prober.infrastructure import register_resource_type
 
 from monitoring.monitorlib.typing import ImplicitDict, StringBasedDateTime
@@ -16,10 +19,7 @@ from monitoring.monitorlib.infrastructure import DSSTestSession
 
 SCOPE_VRP = 'utm.vertiport_management'
 
-
-SUB1_TYPE = register_resource_type(216, 'Subscription 1')
-SUB2_TYPE = register_resource_type(217, 'Subscription 2')
-SUB3_TYPE = register_resource_type(218, 'Subscription 3')
+SUB_TYPE = register_resource_type(216, 'Subscription 1')
 
 
 class Time(ImplicitDict):
@@ -35,56 +35,20 @@ def make_time(t: datetime) -> Time:
 def _make_sub1_req():
   time_start = datetime.datetime.utcnow()
   time_end = time_start + datetime.timedelta(minutes=60)
-
+  
   req = {
-    'vertiport_reservation': {
-        'time_start': make_time(time_start),
-        'time_end': make_time(time_end),
-        'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-        'reserved_zone': 0,
-    },
-    'uss_base_url': 'https://example.com/foo',
-    'notify_for_operational_intents': True,
-    'notify_for_constraints': False,
-    'version': 0
+      'vertiport_reservation': {
+          'time_start': make_time(time_start),
+          'time_end': make_time(time_end),
+          'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+          'reserved_zone': 0,
+      },
+      'uss_base_url': "https://example.com/foo",
+      'notify_for_constraints': False,
+      'notify_for_operational_intents': True,
+      'old_version': 0,
   }
   return req
-
-
-def _make_sub2_req():
-  time_start = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
-  time_end = time_start + datetime.timedelta(minutes=60)
-  req = {
-    'vertiport_reservation': {
-        'time_start': make_time(time_start),
-        'time_end': make_time(time_end),
-        'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-        'reserved_zone': 0,
-    },
-    'uss_base_url': 'https://example.com/foo',
-    'notify_for_operational_intents': True,
-    'notify_for_constraints': False
-  }
-  return req
-
-
-def _make_sub3_req():
-  time_start = datetime.datetime.utcnow() + datetime.timedelta(hours=4)
-  time_end = time_start + datetime.timedelta(minutes=60)
-
-  req = {
-    'vertiport_reservation': {
-        'time_start': make_time(time_start),
-        'time_end': make_time(time_end),
-        'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
-        'reserved_zone': 1,
-    },
-    'uss_base_url': 'https://example.com/foo',
-    'notify_for_operational_intents': True,
-    'notify_for_constraints': False
-  }
-  return req
-
 
 def delete_subscription_if_exists(sub_id: str, vrp_session: DSSTestSession):
     resp = vrp_session.get('/subscriptions/{}'.format(sub_id), scope=SCOPE_VRP)
@@ -100,152 +64,199 @@ def delete_subscription_if_exists(sub_id: str, vrp_session: DSSTestSession):
         assert False, resp.content
 
 
+# Delete Subscription if exists
+# Preconditions: None
+# Mutations: Subscription deleted if exists
 def test_ensure_clean_workspace(ids, vrp_session):
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-      delete_subscription_if_exists(sub_id, vrp_session)
+  delete_subscription_if_exists(ids(SUB_TYPE), vrp_session)
 
 
-# Preconditions: No named Subscriptions exist
+# Subscription shouldn't exist by vertiport id/zone search
+# Preconditions: None
 # Mutations: None
-def test_subs_do_not_exist_get(ids, vrp_session):
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-    resp = vrp_session.get('/subscriptions/{}'.format(sub_id), scope=SCOPE_VRP)
-    assert resp.status_code == 404, resp.content
+def test_sub_does_not_exist_query(ids, vrp_session):
+  if vrp_session is None:
+    return
 
-
-# Preconditions: No named Subscriptions exist
-# Mutations: None
-def test_subs_do_not_exist_query(ids, vrp_session):
-  req = {
-      'vertiport_reservation_of_interest': _make_sub1_req()['vertiport_reservation']
-  }
-  resp = vrp_session.post('/subscriptions/query', json=req, scope=SCOPE_VRP)
-
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
+        }
+  }, scope=SCOPE_VRP)
+  
   assert resp.status_code == 200, resp.content
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-    assert sub_id not in result_ids
-
-  req = {
-      'vertiport_reservation_of_interest': _make_sub2_req()['vertiport_reservation']
-  }
-  resp = vrp_session.post('/subscriptions/query', json=req, scope=SCOPE_VRP)
-
-  assert resp.status_code == 200, resp.content
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-    assert sub_id not in result_ids
-
-  req = {
-      'vertiport_reservation_of_interest': _make_sub3_req()['vertiport_reservation']
-  }
-  resp = vrp_session.post('/subscriptions/query', json=req, scope=SCOPE_VRP)
-
-  assert resp.status_code == 200, resp.content
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-    assert sub_id not in result_ids
+  assert ids(SUB_TYPE) not in [x['id'] for x in resp.json().get('subscriptions', [])]
 
 
-# Preconditions: No named Subscriptions exist
-# Mutations: Subscriptions 1, 2, and 3 created
-def test_create_subs(ids, vrp_session):
-  resp = vrp_session.put('/subscriptions/{}'.format(ids(SUB1_TYPE)), json=_make_sub1_req(), scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
-
-  resp = vrp_session.put('/subscriptions/{}'.format(ids(SUB2_TYPE)), json=_make_sub2_req(), scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
-
-  resp = vrp_session.put('/subscriptions/{}'.format(ids(SUB3_TYPE)), json=_make_sub3_req(), scope=SCOPE_VRP)
+# Create Subscription
+# Preconditions: No named Subscription exists
+# Mutations: Subscription created
+def test_create_sub(ids, vrp_session):
+  req = _make_sub1_req()
+  
+  resp = vrp_session.put('/subscriptions/{}'.format(ids(SUB_TYPE)), json=req, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
 
 
-# Preconditions: Subscriptions 1, 2, and 3 created
+# Search Subscription by vertiport id and zone
+# Preconditions: Subscription created
 # Mutations: None
 def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-            'reserved_zone': 0,
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
         }
     }, scope=SCOPE_VRP)
-
+  
   assert resp.status_code == 200, resp.content
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
+  assert ids(SUB_TYPE) in [x['id'] for x in resp.json()['subscriptions']]
 
-  assert ids(SUB1_TYPE) in result_ids
-  assert ids(SUB2_TYPE) in result_ids
-  assert ids(SUB3_TYPE) not in result_ids
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
+                'reserved_zone': 1,
+            }
+        }
+    }, scope=SCOPE_VRP)
+  
+  assert resp.status_code == 200, resp.content
+  assert ids(SUB_TYPE) not in [x['id'] for x in resp.json()['subscriptions']]
 
 
-# Preconditions: Subscriptions 1, 2, and 3 created
+# Search Subscription by vertiport id, zone + earliest or/and latest time
+# Preconditions: Subscription created
 # Mutations: None
 def test_search_time(ids, vrp_session):
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(minutes=1)
-
-  resp = vrp_session.post('/subscriptions/query',
+  time1 = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+  time2 = datetime.datetime.utcnow() + datetime.timedelta(minutes=100)
+  
+  resp = vrp_session.post('/subscriptions/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'time_start': make_time(time_start),
-            'time_end': make_time(time_end),
-            'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-            'reserved_zone': 0,
+            'vertiport_reservation': {
+                'time_start': make_time(time1),
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
   result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  assert ids(SUB1_TYPE) in result_ids
-  assert ids(SUB2_TYPE) not in result_ids
-  assert ids(SUB3_TYPE) not in result_ids
-
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(hours=2.5)
-
+  assert ids(SUB_TYPE) in result_ids
+  
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'time_end': make_time(time_end),
-            'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-            'reserved_zone': 0,
+            'vertiport_reservation': {
+                'time_start': make_time(time2),
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
+        }
+    }, scope=SCOPE_VRP)
+  
+  assert resp.status_code == 200, resp.content
+  result_ids = [x['id'] for x in resp.json()['subscriptions']]
+  assert ids(SUB_TYPE) not in result_ids
+  
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': make_time(time1),
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
   result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  assert ids(SUB1_TYPE) in result_ids
-  assert ids(SUB2_TYPE) in result_ids
-  assert ids(SUB3_TYPE) not in result_ids
+  assert ids(SUB_TYPE) in result_ids
+  
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': make_time(time2),
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
+        }
+    }, scope=SCOPE_VRP)
+  assert resp.status_code == 200, resp.content
+  result_ids = [x['id'] for x in resp.json()['subscriptions']]
+  assert ids(SUB_TYPE) not in result_ids
+  
+  time3 = time1 + datetime.timedelta(minutes=10)
+  resp = vrp_session.post('/subscriptions/query',
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': make_time(time1),
+                'time_end': make_time(time3),
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
+        }
+    }, scope=SCOPE_VRP)
+  assert resp.status_code == 200, resp.content
+  result_ids = [x['id'] for x in resp.json()['subscriptions']]
+  assert ids(SUB_TYPE) in result_ids
 
-  time_start = datetime.datetime.utcnow() + datetime.timedelta(hours=4)
-  time_end = time_start + datetime.timedelta(minutes=1)
+
+# Delete Subscription
+# Preconditions: Subscription created
+# Mutations: Subscription deleted
+def test_delete_sub(ids, vrp_session):
+  resp = vrp_session.get('/subscriptions/{}'.format(ids(SUB_TYPE)), scope=SCOPE_VRP)
+  assert resp.status_code == 200
+  resp = vrp_session.delete('/subscriptions/{}/{}'.format(ids(SUB_TYPE), resp.json()['subscription']['version']), scope=SCOPE_VRP)
+
+  assert resp.status_code == 200, resp.content
+
+
+# Subscriptiont shouldn't exist by vertiport id/zone search
+# Preconditions: Subscription deleted
+# Mutations: None
+def test_get_deleted_sub_by_search(ids, vrp_session):
+  if vrp_session is None:
+    return
 
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'time_start': make_time(time_start),
-            'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
-            'reserved_zone': 1,
+            'vertiport_reservation': {
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
+            }
         }
     }, scope=SCOPE_VRP)
-
   assert resp.status_code == 200, resp.content
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  assert ids(SUB1_TYPE) not in result_ids
-  assert ids(SUB2_TYPE) not in result_ids
-  assert ids(SUB3_TYPE) in result_ids
+  assert ids(SUB_TYPE) not in [x['id'] for x in resp.json()['subscriptions']]
 
 
-# Preconditions: Subscriptions 1, 2, and 3 created
-# Mutations: Subscriptions 1, 2, and 3 deleted
-def test_delete_subs(ids, vrp_session):
-  for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
-    resp = vrp_session.get('/subscriptions/{}'.format(sub_id), scope=SCOPE_VRP)
-    assert resp.status_code == 200
-    resp = vrp_session.delete('/subscriptions/{}/{}'.format(sub_id, resp.json()['subscription']['version']), scope=SCOPE_VRP)
-
-    assert resp.status_code == 200, resp.content
-
-
+# Ensure Subscription does not exist
+# Preconditions: none
+# Mutations: Subscription deleted if exists
 def test_final_cleanup(ids, vrp_session):
     test_ensure_clean_workspace(ids, vrp_session)
