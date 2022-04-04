@@ -64,8 +64,8 @@ def _make_c1_request():
         'vertiport_reservation': {
             'time_start': make_time(time_start),
             'time_end': make_time(time_end),
-            'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-            'vertiport_zone': 0,
+            'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+            'reserved_zone': 0,
         },
         'old_version': 0,
         'uss_base_url': BASE_URL,

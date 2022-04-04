@@ -62,8 +62,8 @@ def _make_sub1_req():
       'vertiport_reservation': {
           'time_start': make_time(time_start),
           'time_end': make_time(time_end),
-          'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-          'vertiport_zone': 0,
+          'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+          'reserved_zone': 0,
       },
       'uss_base_url': "https://example.com/foo",
       'notify_for_constraints': False,
@@ -105,8 +105,8 @@ def test_sub_does_not_exist_query(ids, scd_api, vrp_session, scope=SCOPE_VRP):
     json = {
         'vertiport_reservation_of_interest': {
             'vertiport_reservation': {
-                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'vertiport_zone': 0,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
             }
         }
     }, scope=SCOPE_VRP)
@@ -147,8 +147,8 @@ def test_get_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
     json = {
         'vertiport_reservation_of_interest': {
             'vertiport_reservation': {
-                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'vertiport_zone': 0,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
             }
         }
     }, scope=SCOPE_VRP)
@@ -225,8 +225,8 @@ def test_get_deleted_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
     json = {
         'vertiport_reservation_of_interest': {
             'vertiport_reservation': {
-                'vertiport_id': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'vertiport_zone': 0,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+                'reserved_zone': 0,
             }
         }
     }, scope=SCOPE_VRP)
