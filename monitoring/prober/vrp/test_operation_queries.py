@@ -91,7 +91,7 @@ def test_op_does_not_exist_query(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
 # Create Op
@@ -108,9 +108,8 @@ def test_create_op(ids, vrp_session):
 
   assert resp.status_code == 200, resp.content
 
-  data = resp.json()
-  print(data)
-  op = data['operational_intent_reference']
+  #print(resp.json())
+  op = resp.json()['operational_intent_reference']
   assert op['id'] == ids(OP_TYPE)
   assert op['uss_base_url'] == BASE_URL
   assert op['uss_availability'] == "Unknown"
@@ -142,7 +141,7 @@ def test_search_vertiport_id_zone(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
 # Preconditions: Operation created
@@ -164,7 +163,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
   
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
@@ -178,7 +177,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
@@ -192,7 +191,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
@@ -206,7 +205,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
   time3 = time1 +  + datetime.timedelta(minutes=10)
   resp = vrp_session.post('/operational_intent_references/query', 
@@ -221,7 +220,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
 @depends_on(test_create_op)
@@ -251,7 +250,7 @@ def test_get_deleted_op_by_search(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [op['id'] for op in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
 def test_final_cleanup(ids, vrp_session):
