@@ -1,14 +1,11 @@
 """Basic strategic conflict detection Subscription tests:
 
   - make sure Subscription doesn't exist by ID
-  - make sure Subscription doesn't exist by search
   - create the Subscription with a 60 minute expiry
   - get by ID
-  - get by searching a vertiport id
   - mutate
   - delete
   - make sure Subscription can't be found by ID
-  - make sure Subscription can't be found by search
 """
 
 import datetime
@@ -50,10 +47,6 @@ def delete_subscription_if_exists(sub_id: str, vrp_session: DSSTestSession):
         assert False, resp.content
 
 
-def test_ensure_clean_workspace(ids, vrp_session):
-    delete_subscription_if_exists(ids(SUB_TYPE), vrp_session)
-
-
 def _make_sub1_req():
   time_start = datetime.datetime.utcnow()
   time_end = time_start + datetime.timedelta(minutes=60)
@@ -90,28 +83,15 @@ def _check_sub1(data, sub_id):
           or len(data['subscription']['dependent_operational_intents']) == 0)
 
 
+def test_ensure_clean_workspace(ids, vrp_session):
+    delete_subscription_if_exists(ids(SUB_TYPE), vrp_session)
+
+
 def test_sub_does_not_exist_get(ids, scd_api, vrp_session, scope=SCOPE_VRP):
   if vrp_session is None:
     return
   resp = vrp_session.get('/subscriptions/{}'.format(ids(SUB_TYPE)), scope=SCOPE_VRP)
   assert resp.status_code == 404, resp.content
-
-
-def test_sub_does_not_exist_query(ids, scd_api, vrp_session, scope=SCOPE_VRP):
-  if vrp_session is None:
-    return
-  
-  resp = vrp_session.post('/subscriptions/query',
-    json = {
-        'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
-                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'reserved_zone': 0,
-            }
-        }
-    }, scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
-  assert ids(SUB_TYPE) not in [sub['id'] for sub in resp.json().get('subscriptions', [])]
 
 
 def test_create_sub(ids, vrp_session, scope=SCOPE_VRP):
@@ -137,24 +117,6 @@ def test_get_sub_by_id(ids, vrp_session, scope=SCOPE_VRP):
 
   data = resp.json()
   _check_sub1(data, ids(SUB_TYPE))
-
-
-def test_get_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
-  if vrp_session is None:
-    return
-  
-  resp = vrp_session.post('/subscriptions/query',
-    json = {
-        'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
-                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'reserved_zone': 0,
-            }
-        }
-    }, scope=SCOPE_VRP)
-
-  assert resp.status_code == 200, resp.content
-  assert ids(SUB_TYPE) in [x['id'] for x in resp.json()['subscriptions']]
 
 
 def test_mutate_zone_sub(ids, vrp_session, scope=SCOPE_VRP):
@@ -215,23 +177,6 @@ def test_get_deleted_sub_by_id(ids, vrp_session, scope=SCOPE_VRP):
     return
   resp = vrp_session.get('/subscriptions/{}'.format(ids(SUB_TYPE)), scope=SCOPE_VRP)
   assert resp.status_code == 404, resp.content
-
-
-def test_get_deleted_sub_by_search(ids, vrp_session, scope=SCOPE_VRP):
-  if vrp_session is None:
-    return
-
-  resp = vrp_session.post('/subscriptions/query',
-    json = {
-        'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
-                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
-                'reserved_zone': 0,
-            }
-        }
-    }, scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
-  assert ids(SUB_TYPE) not in [x['id'] for x in resp.json()['subscriptions']]
 
 
 def test_final_cleanup(ids, vrp_session, scope=SCOPE_VRP):

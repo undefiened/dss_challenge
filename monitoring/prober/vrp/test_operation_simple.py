@@ -5,6 +5,7 @@
   - get by ID
   - mutate
   - delete
+  - make sure Operation can't be found by ID
 """
 
 import datetime
