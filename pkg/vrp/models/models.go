@@ -103,7 +103,7 @@ func (tp *TimePeriod) Cut(periodToCut *TimePeriod) ([]*TimePeriod, error) {
 		})
 		result = append(result, &TimePeriod{
 			From: periodToCut.To,
-			To:   tp.From,
+			To:   tp.To,
 		})
 		return result, nil
 	}
@@ -112,12 +112,12 @@ func (tp *TimePeriod) Cut(periodToCut *TimePeriod) ([]*TimePeriod, error) {
 }
 
 func ComputeFreeTimePeriods(constraints []*VertiportConstraint, operationalIntents []*VertiportOperationalIntent, timeStart time.Time, timeEnd time.Time) ([]*TimePeriod, error) {
-	resultingTimePeriods := make([]*TimePeriod, 1)
+	resultingTimePeriods := make([]*TimePeriod, 0)
 	resultingTimePeriods = append(resultingTimePeriods, &TimePeriod{
 		From: &timeStart,
 		To:   &timeEnd,
 	})
-	busyTimePeriods := make([]*TimePeriod, len(constraints)+len(operationalIntents))
+	busyTimePeriods := make([]*TimePeriod, 0, len(constraints)+len(operationalIntents))
 
 	for _, constraint := range constraints {
 		busyTimePeriods = append(busyTimePeriods, &TimePeriod{
@@ -163,7 +163,7 @@ func ComputeNumberOfUsedParkingPlaces(constraints []*VertiportConstraint, operat
 		From: &timeStart,
 		To:   &timeEnd,
 	}
-	busyTimePeriods := make([]*TimePeriod, len(constraints)+len(operationalIntents))
+	busyTimePeriods := make([]*TimePeriod, 0, len(constraints)+len(operationalIntents))
 
 	for _, constraint := range constraints {
 		busyTimePeriods = append(busyTimePeriods, &TimePeriod{
@@ -184,7 +184,7 @@ func ComputeNumberOfUsedParkingPlaces(constraints []*VertiportConstraint, operat
 		Change int
 	}
 
-	changes := make([]*ChangeInNumberOfUsedPlaces, 2*len(busyTimePeriods))
+	changes := make([]*ChangeInNumberOfUsedPlaces, 0, 2*len(busyTimePeriods))
 
 	for _, tp := range busyTimePeriods {
 		if mainTimePeriod.IntersectsWith(tp) {

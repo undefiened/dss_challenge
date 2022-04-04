@@ -949,19 +949,34 @@ func local_request_UTMAPIVertiportsService_GetVertiportSubscription_0(ctx contex
 
 }
 
-var (
-	filter_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0(ctx context.Context, marshaler runtime.Marshaler, client UTMAPIVertiportsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetNumberOfUsedParkingPlacesRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Params); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["vertiportid"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vertiportid")
+	}
+
+	protoReq.Vertiportid, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vertiportid", err)
 	}
 
 	msg, err := client.GetNumberOfUsedParkingPlaces(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -973,8 +988,30 @@ func local_request_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0(ctx co
 	var protoReq GetNumberOfUsedParkingPlacesRequest
 	var metadata runtime.ServerMetadata
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0); err != nil {
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Params); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["vertiportid"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "vertiportid")
+	}
+
+	protoReq.Vertiportid, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vertiportid", err)
 	}
 
 	msg, err := server.GetNumberOfUsedParkingPlaces(ctx, &protoReq)
@@ -1645,7 +1682,7 @@ func RegisterUTMAPIVertiportsServiceHandlerServer(ctx context.Context, mux *runt
 
 	})
 
-	mux.Handle("GET", pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -2106,7 +2143,7 @@ func RegisterUTMAPIVertiportsServiceHandlerClient(ctx context.Context, mux *runt
 
 	})
 
-	mux.Handle("GET", pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -2278,7 +2315,7 @@ var (
 
 	pattern_UTMAPIVertiportsService_GetVertiportSubscription_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"dss", "v1", "vertiport", "subscriptions", "subscriptionid"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"dss", "v1", "vertiport", "number_of_used_parking_places"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_UTMAPIVertiportsService_GetNumberOfUsedParkingPlaces_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"dss", "v1", "vertiport", "number_of_used_parking_places", "vertiportid"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_UTMAPIVertiportsService_QueryVertiportConstraintReferences_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"dss", "v1", "vertiport", "constraint_references", "query"}, "", runtime.AssumeColonVerbOpt(true)))
 

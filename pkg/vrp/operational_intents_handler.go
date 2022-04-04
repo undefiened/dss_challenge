@@ -273,6 +273,10 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to parse extent")
 	}
 
+	if reservation.GetVertiportid() == "" {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Vertiport id is missing from the reservation")
+	}
+
 	if uExtent.StartTime == nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_start from extents")
 	}

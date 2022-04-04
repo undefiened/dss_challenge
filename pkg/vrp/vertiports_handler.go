@@ -18,21 +18,23 @@ func (a *Server) GetNumberOfUsedParkingPlaces(ctx context.Context, req *vrppb.Ge
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Invalid ID format: `%s`", req.GetVertiportid())
 	}
 
-	if req.GetTimeStart() == nil {
+	params := req.GetParams()
+
+	if params.GetTimeStart() == nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Start time is missing")
 	}
 
-	if req.GetTimeEnd() == nil {
+	if params.GetTimeEnd() == nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "End time is missing")
 	}
 
-	st := req.GetTimeStart().GetValue()
+	st := params.GetTimeStart().GetValue()
 	startTime, err := ptypes.Timestamp(st)
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting start time from proto")
 	}
 
-	et := req.GetTimeStart().GetValue()
+	et := params.GetTimeEnd().GetValue()
 	endTime, err := ptypes.Timestamp(et)
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting end time from proto")
@@ -110,7 +112,7 @@ func (a *Server) GetVertiportFATOAvailableTimes(ctx context.Context, req *vrppb.
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting start time from proto")
 	}
 
-	et := params.GetTimeStart().GetValue()
+	et := params.GetTimeEnd().GetValue()
 	endTime, err := ptypes.Timestamp(et)
 	if err != nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Error converting end time from proto")
@@ -118,6 +120,10 @@ func (a *Server) GetVertiportFATOAvailableTimes(ctx context.Context, req *vrppb.
 
 	var response *vrppb.GetVertiportFATOAvailableTimesResponse
 	action := func(ctx context.Context, r repos.Repository) (err error) {
+		response = &vrppb.GetVertiportFATOAvailableTimesResponse{
+			TimePeriod: make([]*vrppb.TimePeriod, 0),
+		}
+
 		if err != nil {
 			return stacktrace.Propagate(err, "Could not find Vertiport")
 		}

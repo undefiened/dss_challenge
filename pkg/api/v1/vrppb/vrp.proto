@@ -314,10 +314,14 @@ message UpdateVertiportSubscriptionRequest {
 }
 
 
+message GetNumberOfUsedParkingPlacesRequestParams {
+    Time time_start = 1;
+    Time time_end = 2;
+}
+
 message GetNumberOfUsedParkingPlacesRequest {
     string vertiportid = 1;
-    Time time_start = 2;
-    Time time_end = 3;
+    GetNumberOfUsedParkingPlacesRequestParams params = 2;
 }
 
 message GetNumberOfUsedParkingPlacesResponse {
@@ -498,7 +502,8 @@ service UTMAPIVertiportsService {
 
     rpc GetNumberOfUsedParkingPlaces(GetNumberOfUsedParkingPlacesRequest) returns (GetNumberOfUsedParkingPlacesResponse) {
         option (google.api.http) = {
-            get: "/dss/v1/vertiport/number_of_used_parking_places"
+            post: "/dss/v1/vertiport/number_of_used_parking_places/{vertiportid}"
+            body: "params"
         };
     }
 
