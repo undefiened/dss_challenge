@@ -85,16 +85,14 @@ def test_op_does_not_exist_query(ids, vrp_session):
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_references', [])]
 
 
 # Create Op
@@ -111,7 +109,6 @@ def test_create_op(ids, vrp_session):
 
   assert resp.status_code == 200, resp.content
 
-  #print(resp.json())
   op = resp.json()['operational_intent_reference']
   assert op['id'] == ids(OP_TYPE)
   assert op['uss_base_url'] == BASE_URL
@@ -136,30 +133,27 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  print(resp.json())
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json()['operational_intent_references']]
   
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
                 'reserved_zone': 1,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json()['operational_intent_references']]
 
 
 
@@ -174,73 +168,63 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json()['operational_intent_references']]
   
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time2),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json()['operational_intent_references']]
 
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time1),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json()['operational_intent_references']]
 
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time2),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json()['operational_intent_references']]
 
   time3 = time1 + datetime.timedelta(minutes=10)
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': make_time(time3),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) in [x['id'] for x in resp.json()['operational_intent_references']]
 
 
 # Delete Operation
@@ -264,16 +248,14 @@ def test_get_deleted_op_by_search(ids, vrp_session):
   resp = vrp_session.post('/operational_intent_references/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json()['operational_intent_references']]
 
 
 # Ensure Operation does not exist

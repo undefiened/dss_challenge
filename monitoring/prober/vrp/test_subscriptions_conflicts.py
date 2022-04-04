@@ -8,7 +8,6 @@ import datetime
 from typing import Dict
 from typing import Literal, Optional
 
-#from monitoring.monitorlib import scd
 from monitoring.prober.infrastructure import register_resource_type
 
 from monitoring.monitorlib.typing import ImplicitDict, StringBasedDateTime
@@ -33,9 +32,6 @@ def make_time(t: datetime) -> Time:
 
 
 def _make_sub_req(time_start, time_end, vertiport_id, vertiport_zone):
-  time_start = datetime.datetime.utcnow()
-  time_end = time_start + datetime.timedelta(minutes=60)
-  
   req = {
     'vertiport_reservation': {
         'time_start': make_time(time_start),
@@ -78,7 +74,10 @@ def test_ensure_clean_workspace(ids, vrp_session):
 # Mutations: None
 def test_subs_do_not_exist_query(ids, vrp_session):
   req = {
-      'vertiport_reservation_of_interest': _make_sub_req(None, None, 'ACDE070D-8C4C-4f0D-9d8A-162843c10333', 0)
+    'vertiport_reservation_of_interest': {
+        'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
+        'reserved_zone': 0,
+    }
   }
   resp = vrp_session.post('/subscriptions/query', json=req, scope=SCOPE_VRP)
   
@@ -122,19 +121,15 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   
   assert resp.status_code == 200, resp.content
-
-  result_ids = [x['id'] for x in resp.json()['subscriptions']]
-
+  
   result_ids = [x['id'] for x in resp.json()['subscriptions']]
   for sub_id in (ids(SUB1_TYPE), ids(SUB2_TYPE), ids(SUB3_TYPE)):
     assert sub_id in result_ids
@@ -150,12 +145,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time_start),
                 'time_end': make_time(time_end),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
@@ -170,12 +163,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time_start),
                 'time_end': make_time(time_end),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   
@@ -191,12 +182,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time_start),
                 'time_end': make_time(time_end),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
@@ -228,10 +217,8 @@ def test_get_deleted_subs_by_search(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
                 'reserved_zone': 1,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content

@@ -83,16 +83,14 @@ def test_constrain_does_not_exist_query(ids, vrp_session):
   resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_references', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json()['constraint_references']]
 
 
 # Create Constraint
@@ -107,7 +105,6 @@ def test_create_constraint(ids, vrp_session):
   print(resp.content)
   assert resp.status_code == 200, resp.content
 
-  #print(resp.json())
   constraint = resp.json()['constraint_reference']
   assert constraint['id'] == id
   assert constraint['uss_base_url'] == BASE_URL
@@ -125,30 +122,26 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json()['constraint_references']]
 
   resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
                 'reserved_zone': 1,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json()['constraint_references']]
 
 
 # Search Constraint by vertiport id, zone + earliest or/and latest time
@@ -162,73 +155,63 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
   resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json()['constraint_references']]
   
-  resp = vrp_session.post('/operational_intent_references/query', 
+  resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time2),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
-
-  resp = vrp_session.post('/operational_intent_references/query', 
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json()['constraint_references']]
+  
+  resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time1),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
-
-  resp = vrp_session.post('/operational_intent_references/query', 
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json()['constraint_references']]
+  
+  resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time2),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
-
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json()['constraint_references']]
+  
   time3 = time1 + datetime.timedelta(minutes=10)
-  resp = vrp_session.post('/operational_intent_references/query', 
+  resp = vrp_session.post('/constraint_references/query', 
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': make_time(time3),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json()['constraint_references']]
 
 
 # Delete Constraint
@@ -264,16 +247,14 @@ def test_get_deleted_constraint_by_search(ids, vrp_session):
   resp = vrp_session.post('/constraint_references/query',
     json = {
         'reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json()['constraint_references']]
 
 
 # Ensure Constraint does not exist

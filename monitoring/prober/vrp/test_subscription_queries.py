@@ -81,12 +81,10 @@ def test_sub_does_not_exist_query(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
   }, scope=SCOPE_VRP)
   
@@ -111,12 +109,10 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   
@@ -126,12 +122,10 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
                 'reserved_zone': 1,
-            }
         }
     }, scope=SCOPE_VRP)
   
@@ -149,12 +143,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query', 
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
@@ -164,12 +156,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time2),
                 'time_end': None,
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   
@@ -180,12 +170,10 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time1),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
@@ -195,28 +183,24 @@ def test_search_time(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': None,
                 'time_end': make_time(time2),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
   result_ids = [x['id'] for x in resp.json()['subscriptions']]
-  assert ids(SUB_TYPE) not in result_ids
+  assert ids(SUB_TYPE) in result_ids
   
   time3 = time1 + datetime.timedelta(minutes=10)
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'time_start': make_time(time1),
                 'time_end': make_time(time3),
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
@@ -245,10 +229,8 @@ def test_get_deleted_sub_by_search(ids, vrp_session):
   resp = vrp_session.post('/subscriptions/query',
     json = {
         'vertiport_reservation_of_interest': {
-            'vertiport_reservation': {
                 'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10333',
                 'reserved_zone': 0,
-            }
         }
     }, scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
