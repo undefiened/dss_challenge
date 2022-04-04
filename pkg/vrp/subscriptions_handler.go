@@ -3,9 +3,6 @@ package vrp
 import (
 	"context"
 	"github.com/interuss/dss/pkg/api/v1/vrppb"
-	"github.com/interuss/dss/pkg/logging"
-	"go.uber.org/zap"
-
 	"github.com/interuss/dss/pkg/auth"
 	dsserr "github.com/interuss/dss/pkg/errors"
 	dssmodels "github.com/interuss/dss/pkg/models"
@@ -283,9 +280,6 @@ func (a *Server) QueryVertiportSubscriptions(ctx context.Context, req *vrppb.Que
 	}
 
 	reservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
-	logger := logging.WithValuesFromContext(ctx, logging.Logger)
-	logger.Info("query_vrp", zap.Any("reservation", reservation))
-	logger.Info("query_vrp2", zap.Any("reservation", vroi))
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to convert to internal geometry model")
 	}
