@@ -68,6 +68,9 @@ def delete_operation_if_exists(id: str, vrp_session: DSSTestSession):
         assert False, resp.content
 
 
+# Delete Op if exists
+# Preconditions: None
+# Mutations: Op deleted if exists
 def test_ensure_clean_workspace(ids, vrp_session):
     delete_operation_if_exists(ids(OP_TYPE), vrp_session)
 
@@ -95,7 +98,7 @@ def test_op_does_not_exist_query(ids, vrp_session):
 
 
 # Create Op
-# Preconditions: None
+# Preconditions: No named Operation exists
 # Mutations: Operation Op created by vrp_session user
 @depends_on(test_ensure_clean_workspace)
 def test_create_op(ids, vrp_session):
@@ -125,6 +128,7 @@ def test_create_op(ids, vrp_session):
   assert resp.status_code == 200, resp.content
 
 
+# Search Operation by vertiport id and zone
 # Preconditions: Operation created
 # Mutations: None
 @depends_on(test_create_op)
@@ -142,8 +146,24 @@ def test_search_vertiport_id_zone(ids, vrp_session):
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
   assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
+  
+  resp = vrp_session.post('/operational_intent_references/query', 
+    json = {
+        'vertiport_reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
+                'reserved_zone': 1,
+            }
+        }
+  }, scope=SCOPE_VRP )
+  assert resp.status_code == 200, resp.content
+  assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
+
+# Search Operation by vertiport id, zone + earliest or/and latest time
 # Preconditions: Operation created
 # Mutations: None
 @depends_on(test_create_op)
@@ -207,7 +227,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
   assert resp.status_code == 200, resp.content
   assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
-  time3 = time1 +  + datetime.timedelta(minutes=10)
+  time3 = time1 + datetime.timedelta(minutes=10)
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'vertiport_reservation_of_interest': {
@@ -223,6 +243,9 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
   assert ids(OP_TYPE) in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
+# Delete Operation
+# Preconditions: Operation created
+# Mutations: Operation deleted
 @depends_on(test_create_op)
 def test_delete_op(ids, vrp_session):
   resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
@@ -234,7 +257,7 @@ def test_delete_op(ids, vrp_session):
 
 
 # Op shouldn't exist by vertiport id/zone search
-# Preconditions: op is deleted
+# Preconditions: op deleted
 # Mutations: None
 @depends_on(test_delete_op)
 def test_get_deleted_op_by_search(ids, vrp_session):
@@ -253,5 +276,8 @@ def test_get_deleted_op_by_search(ids, vrp_session):
   assert ids(OP_TYPE) not in [x['id'] for x in resp.json().get('operational_intent_reference', [])]
 
 
+# Ensure Operation does not exist
+# Preconditions: none
+# Mutations: Operation deleted if exists
 def test_final_cleanup(ids, vrp_session):
     test_ensure_clean_workspace(ids, vrp_session)

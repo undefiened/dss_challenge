@@ -66,6 +66,9 @@ def delete_constraint_reference_if_exists(id: str, vrp_session: DSSTestSession):
         assert False, resp.content
 
 
+# Delete Constraint if exists
+# Preconditions: None
+# Mutations: Constraint deleted if exists
 def test_ensure_clean_workspace(ids, vrp_session):
   delete_constraint_reference_if_exists(ids(CONSTRAINT_TYPE), vrp_session)
 
@@ -89,11 +92,11 @@ def test_constrain_does_not_exist_query(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) not in [constraints['id'] for constraints in resp.json().get('constraint_references', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_references', [])]
 
 
 # Create Constraint
-# Preconditions: None
+# Preconditions: No named Constrained exists
 # Mutations: Constraint created by vrp_session user
 @depends_on(test_ensure_clean_workspace)
 def test_create_constraint(ids, vrp_session):
@@ -114,7 +117,8 @@ def test_create_constraint(ids, vrp_session):
   assert constraint['version'] == 1
 
 
-# Preconditions: Constrained created
+# Search Constraint by vertiport id and zone
+# Preconditions: Constraint created
 # Mutations: None
 @depends_on(test_create_constraint)
 def test_search_vertiport_id_zone(ids, vrp_session):
@@ -130,11 +134,25 @@ def test_search_vertiport_id_zone(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  print(resp.json())
-  assert ids(CONSTRAINT_TYPE) in [constraints['id'] for constraints in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+
+  resp = vrp_session.post('/constraint_references/query', 
+    json = {
+        'reservation_of_interest': {
+            'vertiport_reservation': {
+                'time_start': None,
+                'time_end': None,
+                'vertiportid': 'ACDE070D-8C4C-4f0D-9d8A-162843c10334',
+                'reserved_zone': 1,
+            }
+        }
+  }, scope=SCOPE_VRP )
+  assert resp.status_code == 200, resp.content
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
 
 
-# Preconditions: Constrained created
+# Search Constraint by vertiport id, zone + earliest or/and latest time
+# Preconditions: Constraint created
 # Mutations: None
 @depends_on(test_create_constraint)
 def test_search_vertiport_id_zone_time(ids, vrp_session):
@@ -167,7 +185,7 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
 
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
@@ -195,9 +213,9 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
         }
   }, scope=SCOPE_VRP )
   assert resp.status_code == 200, resp.content
-  assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
+  assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
 
-  time3 = time1 +  + datetime.timedelta(minutes=10)
+  time3 = time1 + datetime.timedelta(minutes=10)
   resp = vrp_session.post('/operational_intent_references/query', 
     json = {
         'reservation_of_interest': {
@@ -213,6 +231,9 @@ def test_search_vertiport_id_zone_time(ids, vrp_session):
   assert ids(CONSTRAINT_TYPE) in [x['id'] for x in resp.json().get('constraint_reference', [])]
 
 
+# Delete Constraint
+# Preconditions: Constraint created
+# Mutations: Constraint deleted
 @depends_on(test_create_constraint)
 def test_delete_constraint(ids, vrp_session):
   id = ids(CONSTRAINT_TYPE)
@@ -236,7 +257,7 @@ def test_delete_constraint(ids, vrp_session):
 
 
 # Constraint shouldn't exist by vertiport id/zone search
-# Preconditions: Constraint is deleted
+# Preconditions: Constraint deleted
 # Mutations: None
 @depends_on(test_delete_constraint)
 def test_get_deleted_constraint_by_search(ids, vrp_session):
@@ -255,5 +276,8 @@ def test_get_deleted_constraint_by_search(ids, vrp_session):
   assert ids(CONSTRAINT_TYPE) not in [x['id'] for x in resp.json().get('constraint_reference', [])]
 
 
+# Ensure Constraint does not exist
+# Preconditions: none
+# Mutations: Constraint deleted if exists
 def test_final_cleanup(ids, vrp_session):
     test_ensure_clean_workspace(ids, vrp_session)
