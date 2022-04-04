@@ -11,13 +11,9 @@
 import datetime
 from typing import Literal
 
-from monitoring.monitorlib.infrastructure import default_scope
-from monitoring.monitorlib import scd
-from monitoring.monitorlib.scd import SCOPE_SC, SCOPE_CI, SCOPE_CM, SCOPE_CP, SCOPE_CM_SA, SCOPE_AA
 from monitoring.monitorlib.testing import assert_datetimes_are_equal
 from monitoring.monitorlib.typing import ImplicitDict, StringBasedDateTime
-from monitoring.prober.infrastructure import depends_on, for_api_versions, register_resource_type
-from monitoring.prober.scd import actions
+from monitoring.prober.infrastructure import depends_on, register_resource_type
 from monitoring.monitorlib.infrastructure import DSSTestSession
 
 
@@ -104,8 +100,6 @@ def test_create_constraint(ids, vrp_session):
 @depends_on(test_create_constraint)
 def test_get_constraint_by_id(ids, vrp_session):
   id = ids(CONSTRAINT_TYPE)
-
-  auths = (SCOPE_CM, SCOPE_CP)
 
   resp = vrp_session.get('/constraint_references/{}'.format(id), scope=SCOPE_VRP)
   assert resp.status_code == 200, resp.content
