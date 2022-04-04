@@ -3,6 +3,8 @@ package vrp
 import (
 	"context"
 	"github.com/interuss/dss/pkg/api/v1/vrppb"
+	"github.com/interuss/dss/pkg/logging"
+	"go.uber.org/zap"
 
 	"github.com/interuss/dss/pkg/auth"
 	dsserr "github.com/interuss/dss/pkg/errors"
@@ -47,6 +49,10 @@ func (a *Server) PutVertiportSubscription(ctx context.Context, subscriptionid st
 		if err != nil {
 			return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to validate base URL")
 		}
+	}
+
+	if params.VertiportReservation.Vertiportid == "" {
+		return nil, stacktrace.NewErrorWithCode(dsserr.PermissionDenied, "Missing vertiportid")
 	}
 
 	vertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(params.VertiportReservation)
@@ -267,12 +273,19 @@ func (a *Server) GetVertiportSubscription(ctx context.Context, req *vrppb.GetVer
 func (a *Server) QueryVertiportSubscriptions(ctx context.Context, req *vrppb.QueryVertiportSubscriptionsRequest) (*vrppb.QueryVertiportSubscriptionsResponse, error) {
 	// Retrieve the vertiport reservation of interest parameter
 	vroi := req.GetParams().VertiportReservationOfInterest
-	
+
 	if vroi == nil {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiport_reservation_of_interest")
 	}
 
+	if vroi.Vertiportid == "" {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiportid")
+	}
+
 	reservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
+	logger := logging.WithValuesFromContext(ctx, logging.Logger)
+	logger.Info("query_vrp", zap.Any("reservation", reservation))
+	logger.Info("query_vrp2", zap.Any("reservation", vroi))
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to convert to internal geometry model")
 	}
