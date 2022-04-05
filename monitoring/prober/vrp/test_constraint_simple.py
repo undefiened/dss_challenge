@@ -148,18 +148,10 @@ def test_delete_constraint(ids, vrp_session):
   assert resp.status_code == 200, resp.content
   existing_constraint = resp.json().get('constraint_reference', None)
   assert existing_constraint is not None
-
-  req = _make_c1_request()
-  req = {
-    'key': [existing_constraint["ovn"]],
-    'vertiport_reservation': req['vertiport_reservation'],
-    'old_version': existing_constraint['version'],
-    'uss_base_url': 'https://example.com/uss2'
-  }
-
+  
   ovn = existing_constraint["ovn"]
-
-  resp = vrp_session.delete('/constraint_references/{}/{}'.format(id, ovn), json=req, scope=SCOPE_VRP)
+  
+  resp = vrp_session.delete('/constraint_references/{}/{}'.format(id, ovn), scope=SCOPE_VRP)
   assert resp.status_code == 200, "ovn:{}\nresponse: {}".format(ovn, resp.content)
 
 
