@@ -1,5 +1,4 @@
-"""Basic Subscription query tests:
-
+"""
   - add a few Subscriptions spaced in time
   - query with various combinations of arguments
 """
