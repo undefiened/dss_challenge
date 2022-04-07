@@ -19,21 +19,21 @@ VRP3_DEPARTURES = []
 
 def read_vrp1_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
-    vrp1_departures_df = pd.read_excel(filename, index_col=0, sheet_name='Departure from Vertiport 1', \
+    vrp1_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 1', \
         dtype={'Flight ID': str, 'Start Vertiport 1': str, \
         'Destination Vertiport 2': str, 'Destination Vertiport 3': str})
     
     vrp1_departures_list = []
-    for flight_id, row in vrp1_departures_df.groupby(level='Flight ID'):
+
+    for idx, row in vrp1_departures_df.iterrows():
+        dest_vrp = 2 if not pd.isna(row['Destination Vertiport 2']) else 3
         
-        dest_vrp = 2 if not pd.isna(row.loc[flight_id]['Destination Vertiport 2']) else 3
-        
-        start_datetime_str = row.loc[flight_id]['Start Vertiport 1']
+        start_datetime_str = row['Start Vertiport 1']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
         
-        end_datetime_str = row.loc[flight_id]['Destination Vertiport 2'] \
+        end_datetime_str = row['Destination Vertiport 2'] \
             if dest_vrp==2 \
-            else row.loc[flight_id]['Destination Vertiport 3']
+            else row['Destination Vertiport 3']
         
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
         
@@ -41,7 +41,7 @@ def read_vrp1_departures():
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
         
         one_flight_dict = {
-            "Flight ID": flight_id,
+            "Flight ID": row['Flight ID'],
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
@@ -53,21 +53,21 @@ def read_vrp1_departures():
 def read_vrp2_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
     
-    vrp2_departures_df = pd.read_excel(filename, index_col=0, sheet_name='Departure from Vertiport 2', \
+    vrp2_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 2', \
         dtype={'Flight ID': str, 'Start Vertiport 2': str, \
         'Destination Vertiport 1': str, 'Destination Vertiport 3': str})
     
     vrp2_departures_list = []
-    for flight_id, row in vrp2_departures_df.groupby(level='Flight ID'):
+    for idx, row in vrp2_departures_df.iterrows():
         
-        dest_vrp = 1 if not pd.isna(row.loc[flight_id]['Destination Vertiport 1']) else 3
+        dest_vrp = 1 if not pd.isna(row.loc['Destination Vertiport 1']) else 3
         
-        start_datetime_str = row.loc[flight_id]['Start Vertiport 2']
+        start_datetime_str = row['Start Vertiport 2']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
         
-        end_datetime_str = row.loc[flight_id]['Destination Vertiport 1'] \
+        end_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
-            else row.loc[flight_id]['Destination Vertiport 3']
+            else row['Destination Vertiport 3']
         
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
         
@@ -75,7 +75,7 @@ def read_vrp2_departures():
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
 
         one_flight_dict = {
-            "Flight ID": flight_id,
+            "Flight ID": row['Flight ID'],
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
@@ -87,21 +87,21 @@ def read_vrp2_departures():
 def read_vrp3_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
     
-    vrp3_departures_df = pd.read_excel(filename, index_col=0, sheet_name='Departure from Vertiport 3', \
+    vrp3_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 3', \
         dtype={'Flight ID': str, 'Start Vertiport 3': str, \
         'Destination Vertiport 1': str, 'Destination Vertiport 2': str})
     
     vrp3_departures_list = []
-    for flight_id, row in vrp3_departures_df.groupby(level='Flight ID'):
+    for idx, row in vrp3_departures_df.iterrows():
         
-        dest_vrp = 1 if not pd.isna(row.loc[flight_id]['Destination Vertiport 1']) else 2
+        dest_vrp = 1 if not pd.isna(row['Destination Vertiport 1']) else 2
         
-        start_datetime_str = row.loc[flight_id]['Start Vertiport 3']
+        start_datetime_str = row['Start Vertiport 3']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
         
-        end_datetime_str = row.loc[flight_id]['Destination Vertiport 1'] \
+        end_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
-            else row.loc[flight_id]['Destination Vertiport 2']
+            else row['Destination Vertiport 2']
         
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
         
@@ -110,7 +110,7 @@ def read_vrp3_departures():
 
         
         one_flight_dict = {
-            "Flight ID": flight_id,
+            "Flight ID": row['Flight ID'],
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
