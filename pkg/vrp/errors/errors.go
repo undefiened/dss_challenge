@@ -12,7 +12,7 @@ import (
 const errMessageMissingOVNs = "Current OVNs not provided for one or more OperationalIntents or Constraints"
 
 var (
-	ErrMissingOVNs = stacktrace.NewErrorWithCode(dsserrors.MissingOVNs, errMessageMissingOVNs)
+	ErrMissingOVNs = stacktrace.NewErrorWithCode(dsserrors.MissingVertiportOVNs, errMessageMissingOVNs)
 )
 
 // MissingOVNsErrorResponse is Used to return sufficient information for an
@@ -37,7 +37,7 @@ func MissingOVNsErrorResponse(missingOps []*dssmodels.VertiportOperationalIntent
 		detail.MissingConstraints = append(detail.MissingConstraints, constraintRef)
 	}
 
-	p, err := dsserrors.MakeStatusProto(codes.Code(uint16(dsserrors.MissingOVNs)), errMessageMissingOVNs, detail)
+	p, err := dsserrors.MakeStatusProto(codes.Code(uint16(dsserrors.MissingVertiportOVNs)), errMessageMissingOVNs, detail)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "Error adding AirspaceConflictResponse detail to Status")
 	}

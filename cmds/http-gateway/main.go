@@ -209,6 +209,8 @@ func myCodeToHTTPStatus(code codes.Code) int {
 		return http.StatusRequestEntityTooLarge
 	case codes.Code(uint16(errors.MissingOVNs)):
 		return http.StatusConflict
+	case codes.Code(uint16(errors.MissingVertiportOVNs)):
+		return http.StatusConflict
 	}
 
 	grpclog.Warningf("Unknown gRPC error code: %v", code)
@@ -259,6 +261,20 @@ func myHTTPError(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.M
 				grpclog.Errorf("Error %s was an AirspaceConflictResponse from the Core Service", errID)
 			} else {
 				marshalingErr = stacktrace.NewError("Unable to cast s.Details()[0] from %s to *scdpb.AirspaceConflictResponse", reflect.TypeOf(s.Details()[0]))
+			}
+		}
+		handled = true
+	} else if s.Code() == codes.Code(uint16(errors.MissingVertiportOVNs)) {
+		// Handle special return schema for missing OVNs
+		if len(s.Details()) < 1 {
+			marshalingErr = stacktrace.NewError("Missing Details from Status")
+		} else {
+			body, ok := s.Details()[0].(*vrppb.AirspaceConflictResponse)
+			if ok {
+				buf, marshalingErr = marshaler.Marshal(body)
+				grpclog.Errorf("Error %s was an AirspaceConflictResponse from the Core Service", errID)
+			} else {
+				marshalingErr = stacktrace.NewError("Unable to cast s.Details()[0] from %s to *vrppb.AirspaceConflictResponse", reflect.TypeOf(s.Details()[0]))
 			}
 		}
 		handled = true

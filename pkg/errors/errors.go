@@ -28,6 +28,10 @@ const (
 	// be returned rather than the standard error response.
 	MissingOVNs stacktrace.ErrorCode = stacktrace.ErrorCode(19)
 
+	// MissingVertiportOVNs is the error to signal that an VertiportConflictResponse should
+	// be returned rather than the standard error response.
+	MissingVertiportOVNs stacktrace.ErrorCode = stacktrace.ErrorCode(119)
+
 	// AlreadyExists is used when attempting to create a resource that already
 	// exists.
 	AlreadyExists stacktrace.ErrorCode = stacktrace.ErrorCode(uint16(codes.AlreadyExists))
