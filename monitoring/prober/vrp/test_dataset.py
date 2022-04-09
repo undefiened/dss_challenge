@@ -3,6 +3,7 @@
 """
 
 import datetime
+import itertools
 from typing import Literal
 import pandas as pd
 
@@ -13,14 +14,14 @@ from monitoring.monitorlib.formatting import make_datetime
 
 SCOPE_VRP = 'utm.vertiport_management'
 
-VRP1_DEPARTURES = []
-VRP2_DEPARTURES = []
-VRP3_DEPARTURES = []
+VRP_DEPARTURES = []
 
 VERTIPORTS_IDS = []
 
-MAX_HOVER_MIN = 10
+MAX_HOVER_MIN = 15
 MAX_DELAY_MIN = 60
+
+DELAY_MIN = 1
 
 RESERVATION_TIME_MIN = 2.5
 
@@ -49,6 +50,7 @@ def read_vrp1_departures():
 
         one_flight_dict = {
             "Flight ID": row['Flight ID'],
+            "Origin Vertiport": 1,
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
@@ -83,6 +85,7 @@ def read_vrp2_departures():
 
         one_flight_dict = {
             "Flight ID": row['Flight ID'],
+            "Origin Vertiport": 2,
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
@@ -118,6 +121,7 @@ def read_vrp3_departures():
 
         one_flight_dict = {
             "Flight ID": row['Flight ID'],
+            "Origin Vertiport": 3,
             "Destination Vertiport": dest_vrp,
             "Start Time": start_datetime_obj,
             "End Time":  end_datetime_obj
@@ -172,11 +176,19 @@ def delete_operation_if_exists(id: str, vrp_session: DSSTestSession):
 
 
 def setup_module(vrp_session):
-    global VRP1_DEPARTURES, VRP2_DEPARTURES, VRP3_DEPARTURES, VERTIPORTS_IDS
-    VRP1_DEPARTURES = read_vrp1_departures()
-    VRP2_DEPARTURES = read_vrp2_departures()
-    VRP3_DEPARTURES = read_vrp3_departures()
+    global VRP_DEPARTURES, VERTIPORTS_IDS
+
     VERTIPORTS_IDS = [IDFactory('Vertiport 1').make_id(1), IDFactory('Vertiport 2').make_id(1), IDFactory('Vertiport 3').make_id(1)]
+    vrp1_departures = read_vrp1_departures()
+    vrp2_departures = read_vrp2_departures()
+    vrp3_departures = read_vrp3_departures()
+
+
+    VRP_DEPARTURES = sorted(
+        list(itertools.chain(vrp1_departures, vrp2_departures, vrp3_departures)),
+        key=lambda x: x['Start Time']
+    )
+
 
 
 def test_create_vertiports(ids, vrp_session):
@@ -207,57 +219,81 @@ def find_first_available_time_period(time_periods):
 
         if t_to - t_from > datetime.timedelta(minutes=RESERVATION_TIME_MIN):
             return (t_from, t_to)
+        else:
+            print((time_period, t_from, t_to, t_to - t_from))
 
     return None
+
+
+def schedule_flights(vrp_session, orig_vrp_id, intended_start_time, planned_flight_time, dest_vrp_id):
+    resp = vrp_session.post('/fato_available_times/{}'.format(orig_vrp_id), json={
+        'time_start': make_time(intended_start_time),
+        'time_end': make_time(intended_start_time + datetime.timedelta(minutes=MAX_DELAY_MIN))
+    }, scope=SCOPE_VRP)
+
+    data = resp.json()
+    time_period = find_first_available_time_period(data['time_period'])
+
+    if time_period is None:
+        raise Exception('No available time period!')
+
+    real_time_start = time_period[0]
+
+    intended_end_time = real_time_start + planned_flight_time
+
+    resp = vrp_session.post('/fato_available_times/{}'.format(dest_vrp_id), json={
+        'time_start': make_time(intended_end_time),
+        'time_end': make_time(intended_end_time + datetime.timedelta(minutes=MAX_HOVER_MIN))
+    }, scope=SCOPE_VRP)
+
+    data = resp.json()
+    time_period = find_first_available_time_period(data['time_period'])
+
+    if time_period is None:
+        raise Exception('No available time period!')
+
+    real_time_arrival = time_period[0]
+
+    return real_time_start, real_time_arrival
+
+
 
 # Create Op
 # Preconditions: None
 # Mutations: Operation Op created by vrp_session user
 @depends_on(test_ensure_clean_workspace)
 def test_create_ops(ids, vrp_session):
-    for ind, departure in enumerate(VRP1_DEPARTURES):
-        vrp1_id = VERTIPORTS_IDS[0]
+    for ind, departure in enumerate(VRP_DEPARTURES):
+        orig_vrp_id = VERTIPORTS_IDS[departure['Origin Vertiport'] - 1]
+        dest_vrp_id = VERTIPORTS_IDS[departure['Destination Vertiport'] - 1]
         intended_start_time = departure['Start Time']
-        intended_end_time = departure['End Time']
+        planned_flight_time = departure['End Time'] - departure['Start Time']
+        # intended_end_time = departure['End Time']
         # end_time = start_time + datetime.timedelta(minutes=2.5)
 
+        schedule_found = False
 
-        # create operational intent for departure
-        op_id = IDFactory('OP{}_{}_{}'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
-        resp = vrp_session.post('/fato_available_times/{}'.format(vrp1_id), json={
-            'time_start': make_time(intended_start_time),
-            'time_end': make_time(intended_start_time + datetime.timedelta(minutes=MAX_DELAY_MIN))
-        }, scope=SCOPE_VRP)
+        while not schedule_found:
+            try:
+                real_time_start, real_time_arrival = schedule_flights(vrp_session, orig_vrp_id, intended_start_time, planned_flight_time, dest_vrp_id)
+            except:
+                intended_start_time = intended_start_time + datetime.timedelta(minutes=DELAY_MIN)
+                continue
+            
+            schedule_found = True
 
-        data = resp.json()
-        time_period = find_first_available_time_period(data['time_period'])
-        assert time_period is not None
-        req = _make_op_request(vrp1_id, 0, time_period[0] + datetime.timedelta(seconds=1), time_period[0] + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
-        print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
-        resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
+            # create operational intent for departure
+            op_id = IDFactory('OP{}_{}_{}'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+            req = _make_op_request(orig_vrp_id, 0, real_time_start + datetime.timedelta(seconds=1), real_time_start + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
+            # print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
+            resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
+            assert resp.status_code == 200, resp.content
 
-
-
-
-        # create operational intent for arrival
-        op_id = IDFactory('OP{}_{}_{}2'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
-        dest_vrp_id = VERTIPORTS_IDS[departure['Destination Vertiport'] - 1]
-        resp = vrp_session.post('/fato_available_times/{}'.format(dest_vrp_id), json={
-            'time_start': make_time(intended_end_time),
-            'time_end': make_time(intended_end_time + datetime.timedelta(minutes=MAX_HOVER_MIN))
-        }, scope=SCOPE_VRP)
-
-        data = resp.json()
-        time_period = find_first_available_time_period(data['time_period'])
-        assert time_period is not None
-        req = _make_op_request(dest_vrp_id, 0, time_period[0] + datetime.timedelta(seconds=1), time_period[0] + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
-        print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
-        resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
-
-
-        # print(resp.content)
-        assert resp.status_code == 200, resp.content
-        # print(ind)
+            # create operational intent for arrival
+            op_id = IDFactory('OP{}_{}_{}2'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+            req = _make_op_request(dest_vrp_id, 0, real_time_arrival + datetime.timedelta(seconds=1), real_time_arrival + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
+            resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
+            assert resp.status_code == 200, resp.content
 
 
 # @depends_on(test_create_op)
