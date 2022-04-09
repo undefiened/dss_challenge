@@ -1,11 +1,12 @@
-"""Basic Constraint tests:
+"""Basic Vertiport tests:
 
-  - make sure the Constraint doesn't exist with get or query
-  - create the Constraint with a 60 minute length
+  - make sure the Vertiport doesn't exist with get or query
+  - create the Vertiport with 5 parking places
   - get by ID
-  - search with earliest_time and latest_time
-  - mutate
+  - change
   - delete
+  - get the number of used parking places
+  - get available times at FATO
 """
 
 import datetime
