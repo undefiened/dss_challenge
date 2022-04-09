@@ -6,9 +6,10 @@ import datetime
 from typing import Literal
 import pandas as pd
 
-from monitoring.prober.infrastructure import depends_on, register_resource_type
+from monitoring.prober.infrastructure import depends_on, register_resource_type, IDFactory
 from monitoring.monitorlib.infrastructure import DSSTestSession
 from monitoring.monitorlib.typing import ImplicitDict, StringBasedDateTime
+from monitoring.monitorlib.formatting import make_datetime
 
 SCOPE_VRP = 'utm.vertiport_management'
 
@@ -16,30 +17,36 @@ VRP1_DEPARTURES = []
 VRP2_DEPARTURES = []
 VRP3_DEPARTURES = []
 
+VERTIPORTS_IDS = []
+
+MAX_HOVER_MIN = 10
+MAX_DELAY_MIN = 60
+
+RESERVATION_TIME_MIN = 2.5
 
 def read_vrp1_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
     vrp1_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 1', \
         dtype={'Flight ID': str, 'Start Vertiport 1': str, \
         'Destination Vertiport 2': str, 'Destination Vertiport 3': str})
-    
+
     vrp1_departures_list = []
 
     for idx, row in vrp1_departures_df.iterrows():
         dest_vrp = 2 if not pd.isna(row['Destination Vertiport 2']) else 3
-        
+
         start_datetime_str = row['Start Vertiport 1']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         end_datetime_str = row['Destination Vertiport 2'] \
             if dest_vrp==2 \
             else row['Destination Vertiport 3']
-        
+
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
-        
+
         one_flight_dict = {
             "Flight ID": row['Flight ID'],
             "Destination Vertiport": dest_vrp,
@@ -52,25 +59,25 @@ def read_vrp1_departures():
 
 def read_vrp2_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
-    
+
     vrp2_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 2', \
         dtype={'Flight ID': str, 'Start Vertiport 2': str, \
         'Destination Vertiport 1': str, 'Destination Vertiport 3': str})
-    
+
     vrp2_departures_list = []
     for idx, row in vrp2_departures_df.iterrows():
-        
+
         dest_vrp = 1 if not pd.isna(row.loc['Destination Vertiport 1']) else 3
-        
+
         start_datetime_str = row['Start Vertiport 2']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         end_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
             else row['Destination Vertiport 3']
-        
+
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
 
@@ -86,29 +93,29 @@ def read_vrp2_departures():
 
 def read_vrp3_departures():
     filename = "/monitoring/prober/vrp/RandomDemand.xlsx"
-    
+
     vrp3_departures_df = pd.read_excel(filename, sheet_name='Departure from Vertiport 3', \
         dtype={'Flight ID': str, 'Start Vertiport 3': str, \
         'Destination Vertiport 1': str, 'Destination Vertiport 2': str})
-    
+
     vrp3_departures_list = []
     for idx, row in vrp3_departures_df.iterrows():
-        
+
         dest_vrp = 1 if not pd.isna(row['Destination Vertiport 1']) else 2
-        
+
         start_datetime_str = row['Start Vertiport 3']
         start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         end_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
             else row['Destination Vertiport 2']
-        
+
         end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
-        
+
         start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
 
-        
+
         one_flight_dict = {
             "Flight ID": row['Flight ID'],
             "Destination Vertiport": dest_vrp,
@@ -165,10 +172,17 @@ def delete_operation_if_exists(id: str, vrp_session: DSSTestSession):
 
 
 def setup_module(vrp_session):
-    global VRP1_DEPARTURES, VRP2_DEPARTURES, VRP3_DEPARTURES
+    global VRP1_DEPARTURES, VRP2_DEPARTURES, VRP3_DEPARTURES, VERTIPORTS_IDS
     VRP1_DEPARTURES = read_vrp1_departures()
     VRP2_DEPARTURES = read_vrp2_departures()
     VRP3_DEPARTURES = read_vrp3_departures()
+    VERTIPORTS_IDS = [IDFactory('Vertiport 1').make_id(1), IDFactory('Vertiport 2').make_id(1), IDFactory('Vertiport 3').make_id(1)]
+
+
+def test_create_vertiports(ids, vrp_session):
+    for vrp_id in VERTIPORTS_IDS:
+        resp = vrp_session.put('/{}'.format(vrp_id), json={'number_of_parking_places': 5}, scope=SCOPE_VRP)
+        assert resp.status_code == 200, resp.content
 
 
 def test_ensure_clean_workspace(ids, vrp_session):
@@ -179,38 +193,86 @@ def test_ensure_clean_workspace(ids, vrp_session):
 # Preconditions: None
 # Mutations: None
 def test_op_does_not_exist_get(ids, vrp_session):
-  resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
-  assert resp.status_code == 404, resp.content
+    resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
+    assert resp.status_code == 404, resp.content
 
+
+def find_first_available_time_period(time_periods):
+    for time_period in time_periods:
+        t_from = make_datetime(time_period['from']['value'])
+        t_to = make_datetime(time_period['to']['value'])
+
+        t_from = t_from.replace(tzinfo=None)
+        t_to = t_to.replace(tzinfo=None)
+
+        if t_to - t_from > datetime.timedelta(minutes=RESERVATION_TIME_MIN):
+            return (t_from, t_to)
+
+    return None
 
 # Create Op
 # Preconditions: None
 # Mutations: Operation Op created by vrp_session user
 @depends_on(test_ensure_clean_workspace)
-def test_create_op(ids, vrp_session):
-
-  id = ids(OP_TYPE)
-  
-  vrp1_id = 'ACDE070D-8C4C-4f0D-9d8A-000000000001'
-  start_time =  VRP1_DEPARTURES[1]['Start Time']
-  end_time = start_time + datetime.timedelta(minutes=2.5)
-  
-  req = _make_op_request(vrp1_id, 0, start_time, end_time)
-  
-  resp = vrp_session.put('/operational_intent_references/{}'.format(id), json=req, scope=SCOPE_VRP)
-  
-  assert resp.status_code == 200, resp.content
+def test_create_ops(ids, vrp_session):
+    for ind, departure in enumerate(VRP1_DEPARTURES):
+        vrp1_id = VERTIPORTS_IDS[0]
+        intended_start_time = departure['Start Time']
+        intended_end_time = departure['End Time']
+        # end_time = start_time + datetime.timedelta(minutes=2.5)
 
 
-@depends_on(test_create_op)
-def test_delete_op(ids, vrp_session):
-  resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
-  ovn = resp.json()['operational_intent_reference']['ovn']
+        # create operational intent for departure
+        op_id = IDFactory('OP{}_{}_{}'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+        resp = vrp_session.post('/fato_available_times/{}'.format(vrp1_id), json={
+            'time_start': make_time(intended_start_time),
+            'time_end': make_time(intended_start_time + datetime.timedelta(minutes=MAX_DELAY_MIN))
+        }, scope=SCOPE_VRP)
 
-  resp = vrp_session.delete('/operational_intent_references/{}/{}'.format(ids(OP_TYPE), ovn), scope=SCOPE_VRP)
-  assert resp.status_code == 200, resp.content
+        data = resp.json()
+        time_period = find_first_available_time_period(data['time_period'])
+        assert time_period is not None
+        req = _make_op_request(vrp1_id, 0, time_period[0] + datetime.timedelta(seconds=1), time_period[0] + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
+        print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
+        resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
 
 
-def test_final_cleanup(ids, vrp_session):
-    test_ensure_clean_workspace(ids, vrp_session)
+
+
+        # create operational intent for arrival
+        op_id = IDFactory('OP{}_{}_{}2'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+        dest_vrp_id = VERTIPORTS_IDS[departure['Destination Vertiport'] - 1]
+        resp = vrp_session.post('/fato_available_times/{}'.format(dest_vrp_id), json={
+            'time_start': make_time(intended_end_time),
+            'time_end': make_time(intended_end_time + datetime.timedelta(minutes=MAX_HOVER_MIN))
+        }, scope=SCOPE_VRP)
+
+        data = resp.json()
+        time_period = find_first_available_time_period(data['time_period'])
+        assert time_period is not None
+        req = _make_op_request(dest_vrp_id, 0, time_period[0] + datetime.timedelta(seconds=1), time_period[0] + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
+        print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
+        resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
+
+
+        # print(resp.content)
+        assert resp.status_code == 200, resp.content
+        # print(ind)
+
+
+# @depends_on(test_create_op)
+# def test_delete_op(ids, vrp_session):
+#   resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
+#   assert resp.status_code == 200, resp.content
+#   ovn = resp.json()['operational_intent_reference']['ovn']
+#
+#   resp = vrp_session.delete('/operational_intent_references/{}/{}'.format(ids(OP_TYPE), ovn), scope=SCOPE_VRP)
+#   assert resp.status_code == 200, resp.content
+#
+#
+# def test_delete_vertiports(ids):
+#     pass
+#
+#
+# def test_final_cleanup(ids, vrp_session):
+#     test_ensure_clean_workspace(ids, vrp_session)
