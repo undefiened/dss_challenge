@@ -49,6 +49,8 @@ def read_vrp1_departures():
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
 
         one_flight_dict = {
+            "ID Departure": IDFactory('OP{}_{}_{}'.format(idx, 1, dest_vrp)).make_id(idx),
+            "ID Arrival": IDFactory('OP{}_{}_{}2'.format(idx, 1, dest_vrp)).make_id(idx),
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 1,
             "Destination Vertiport": dest_vrp,
@@ -84,6 +86,8 @@ def read_vrp2_departures():
         end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
 
         one_flight_dict = {
+            "ID Departure": IDFactory('OP{}_{}_{}'.format(idx, 2, dest_vrp)).make_id(idx),
+            "ID Arrival": IDFactory('OP{}_{}_{}2'.format(idx, 2, dest_vrp)).make_id(idx),
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 2,
             "Destination Vertiport": dest_vrp,
@@ -120,6 +124,8 @@ def read_vrp3_departures():
 
 
         one_flight_dict = {
+            "ID Departure": IDFactory('OP{}_{}_{}'.format(idx, 3, dest_vrp)).make_id(idx),
+            "ID Arrival": IDFactory('OP{}_{}_{}2'.format(idx, 3, dest_vrp)).make_id(idx),
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 3,
             "Destination Vertiport": dest_vrp,
@@ -190,15 +196,24 @@ def setup_module(vrp_session):
     )
 
 
+def test_ensure_clean_workspace(ids, vrp_session):
+    for vrp_id in VERTIPORTS_IDS:
+        resp = vrp_session.get('/{}'.format(vrp_id), scope=SCOPE_VRP)
+
+        if resp.status_code == 200:
+            resp = vrp_session.delete('/{}'.format(vrp_id), scope=SCOPE_VRP)
+
+            assert resp.status_code == 200
+
+    for operation in VRP_DEPARTURES:
+        delete_operation_if_exists(operation['ID Departure'], vrp_session)
+        delete_operation_if_exists(operation['ID Arrival'], vrp_session)
+
 
 def test_create_vertiports(ids, vrp_session):
     for vrp_id in VERTIPORTS_IDS:
         resp = vrp_session.put('/{}'.format(vrp_id), json={'number_of_parking_places': 5}, scope=SCOPE_VRP)
         assert resp.status_code == 200, resp.content
-
-
-def test_ensure_clean_workspace(ids, vrp_session):
-    delete_operation_if_exists(ids(OP_TYPE), vrp_session)
 
 
 # Op shouldn't exist by ID
@@ -268,8 +283,6 @@ def test_create_ops(ids, vrp_session):
         dest_vrp_id = VERTIPORTS_IDS[departure['Destination Vertiport'] - 1]
         intended_start_time = departure['Start Time']
         planned_flight_time = departure['End Time'] - departure['Start Time']
-        # intended_end_time = departure['End Time']
-        # end_time = start_time + datetime.timedelta(minutes=2.5)
 
         schedule_found = False
 
@@ -279,36 +292,22 @@ def test_create_ops(ids, vrp_session):
             except:
                 intended_start_time = intended_start_time + datetime.timedelta(minutes=DELAY_MIN)
                 continue
-            
+
             schedule_found = True
 
             # create operational intent for departure
-            op_id = IDFactory('OP{}_{}_{}'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+            op_id = departure['ID Departure']
             req = _make_op_request(orig_vrp_id, 0, real_time_start + datetime.timedelta(seconds=1), real_time_start + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
             # print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
             resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
             assert resp.status_code == 200, resp.content
 
             # create operational intent for arrival
-            op_id = IDFactory('OP{}_{}_{}2'.format(ind, 1, departure['Destination Vertiport'])).make_id(ind)
+            op_id = departure['ID Arrival']
             req = _make_op_request(dest_vrp_id, 0, real_time_arrival + datetime.timedelta(seconds=1), real_time_arrival + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
             resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
             assert resp.status_code == 200, resp.content
 
 
-# @depends_on(test_create_op)
-# def test_delete_op(ids, vrp_session):
-#   resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
-#   assert resp.status_code == 200, resp.content
-#   ovn = resp.json()['operational_intent_reference']['ovn']
-#
-#   resp = vrp_session.delete('/operational_intent_references/{}/{}'.format(ids(OP_TYPE), ovn), scope=SCOPE_VRP)
-#   assert resp.status_code == 200, resp.content
-#
-#
-# def test_delete_vertiports(ids):
-#     pass
-#
-#
-# def test_final_cleanup(ids, vrp_session):
-#     test_ensure_clean_workspace(ids, vrp_session)
+def test_final_cleanup(ids, vrp_session):
+    test_ensure_clean_workspace(ids, vrp_session)
