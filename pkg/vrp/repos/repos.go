@@ -55,7 +55,7 @@ type VertiportSubscription interface {
 
 //// repos.Constraint abstracts constraint-specific interactions with the backing store.
 type VertiportConstraint interface {
-	// SearchConstraints returns all Constraints in "v4d".
+	// SearchConstraints returns all Constraints in "vertiportReservation".
 	SearchVertiportConstraints(ctx context.Context, vertiportReservation *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportConstraint, error)
 
 	// GetConstraint returns the Constraint referenced by id, or

@@ -224,9 +224,9 @@ func (s *repo) UpsertVertiportOperationalIntent(ctx context.Context, operation *
 	return operation, nil
 }
 
-func (s *repo) searchOperationalIntents(ctx context.Context, q dsssql.Queryable, v4d *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportOperationalIntent, error) {
+func (s *repo) searchOperationalIntents(ctx context.Context, q dsssql.Queryable, reservation *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportOperationalIntent, error) {
 	var (
-		operationsIntersectingVolumeQuery = fmt.Sprintf(`
+		operationsIntersectingVertiportQuery = fmt.Sprintf(`
 			SELECT
 				%s
 			FROM
@@ -241,11 +241,11 @@ func (s *repo) searchOperationalIntents(ctx context.Context, q dsssql.Queryable,
 	)
 
 	result, err := s.fetchOperationalIntents(
-		ctx, q, operationsIntersectingVolumeQuery,
-		v4d.VertiportID,
-		v4d.VertiportZone,
-		v4d.StartTime,
-		v4d.EndTime,
+		ctx, q, operationsIntersectingVertiportQuery,
+		reservation.VertiportID,
+		reservation.VertiportZone,
+		reservation.StartTime,
+		reservation.EndTime,
 		dssmodels.MaxResultLimit,
 	)
 	if err != nil {
@@ -256,8 +256,8 @@ func (s *repo) searchOperationalIntents(ctx context.Context, q dsssql.Queryable,
 }
 
 // SearchOperations implements repos.Operation.SearchOperations.
-func (s *repo) SearchVertiportOperationalIntents(ctx context.Context, v4d *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportOperationalIntent, error) {
-	return s.searchOperationalIntents(ctx, s.q, v4d)
+func (s *repo) SearchVertiportOperationalIntents(ctx context.Context, reservation *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportOperationalIntent, error) {
+	return s.searchOperationalIntents(ctx, s.q, reservation)
 }
 
 // GetDependentOperations implements repos.Operation.GetDependentOperations.

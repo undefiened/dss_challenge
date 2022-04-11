@@ -179,14 +179,13 @@ func (a *Server) GetVertiportOperationalIntentReference(ctx context.Context, req
 // QueryOperationalIntentsReferences queries existing operational intent refs in the given
 // bounds.
 func (a *Server) QueryVertiportOperationalIntentReferences(ctx context.Context, req *vrppb.QueryVertiportOperationalIntentReferencesRequest) (*vrppb.QueryVertiportOperationalIntentReferenceResponse, error) {
-	// Retrieve the area of interest parameter
-	aoi := req.GetParams().GetVertiportReservationOfInterest()
-	if aoi == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiport reservation")
+	// Retrieve the reservation of interest parameter
+	vroi := req.GetParams().GetVertiportReservationOfInterest()
+	if vroi == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiport_reservation_of_interest")
 	}
 
-	// Parse area of interest to common Volume4D
-	vol4, err := dssmodels.VertiportReservationFromVRPProto(aoi)
+	vertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Error parsing geometry")
 	}
@@ -200,7 +199,7 @@ func (a *Server) QueryVertiportOperationalIntentReferences(ctx context.Context, 
 	var response *vrppb.QueryVertiportOperationalIntentReferenceResponse
 	action := func(ctx context.Context, r repos.Repository) (err error) {
 		// Perform search query on Store
-		ops, err := r.SearchVertiportOperationalIntents(ctx, vol4)
+		ops, err := r.SearchVertiportOperationalIntents(ctx, vertiportReservation)
 		if err != nil {
 			return stacktrace.Propagate(err, "Unable to query for OperationalIntents in repo")
 		}
@@ -268,27 +267,27 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 	}
 
 	reservation := params.GetVertiportReservation()
-	uExtent, err := dssmodels.VertiportReservationFromVRPProto(reservation)
+	uVertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(reservation)
 	if err != nil {
-		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to parse extent")
+		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to parse vertiport reservation")
 	}
 
 	if reservation.GetVertiportid() == "" {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Vertiport id is missing from the reservation")
 	}
 
-	if uExtent.StartTime == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_start from extents")
+	if uVertiportReservation.StartTime == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_start from the reservation")
 	}
-	if uExtent.EndTime == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_end from extents")
+	if uVertiportReservation.EndTime == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_end from the reservation")
 	}
 
-	if time.Now().After(*uExtent.EndTime) {
+	if time.Now().After(*uVertiportReservation.EndTime) {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "OperationalIntents may not end in the past")
 	}
 
-	if uExtent.EndTime.Before(*uExtent.StartTime) {
+	if uVertiportReservation.EndTime.Before(*uVertiportReservation.StartTime) {
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "End time is past the start time")
 	}
 
@@ -346,10 +345,10 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 			sub, err = r.UpsertVertiportSubscription(ctx, &vrpmodels.VertiportSubscription{
 				ID:                          dssmodels.ID(uuid.New().String()),
 				Manager:                     manager,
-				StartTime:                   uExtent.StartTime,
-				EndTime:                     uExtent.EndTime,
-				VertiportID:                 uExtent.VertiportID,
-				VertiportZone:               uExtent.VertiportZone,
+				StartTime:                   uVertiportReservation.StartTime,
+				EndTime:                     uVertiportReservation.EndTime,
+				VertiportID:                 uVertiportReservation.VertiportID,
+				VertiportZone:               uVertiportReservation.VertiportZone,
 				USSBaseURL:                  subBaseURL,
 				NotifyForOperationalIntents: true,
 				NotifyForConstraints:        params.GetNewSubscription().GetNotifyForConstraints(),
@@ -373,34 +372,34 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 					"Subscription %s owned by %s, but %s attempted to use it for an OperationalIntent", subscriptionID, sub.Manager, manager)
 			}
 			updateSub := false
-			if sub.StartTime != nil && sub.StartTime.After(*uExtent.StartTime) {
+			if sub.StartTime != nil && sub.StartTime.After(*uVertiportReservation.StartTime) {
 				if sub.ImplicitSubscription {
-					sub.StartTime = uExtent.StartTime
+					sub.StartTime = uVertiportReservation.StartTime
 					updateSub = true
 				} else {
 					return stacktrace.NewErrorWithCode(dsserr.BadRequest, "Subscription does not begin until after the OperationalIntent starts")
 				}
 			}
-			if sub.EndTime != nil && sub.EndTime.Before(*uExtent.EndTime) {
+			if sub.EndTime != nil && sub.EndTime.Before(*uVertiportReservation.EndTime) {
 				if sub.ImplicitSubscription {
-					sub.EndTime = uExtent.EndTime
+					sub.EndTime = uVertiportReservation.EndTime
 					updateSub = true
 				} else {
 					return stacktrace.NewErrorWithCode(dsserr.BadRequest, "Subscription ends before the OperationalIntent ends")
 				}
 			}
-			if sub.VertiportID != uExtent.VertiportID {
+			if sub.VertiportID != uVertiportReservation.VertiportID {
 				if sub.ImplicitSubscription {
-					sub.VertiportID = uExtent.VertiportID
+					sub.VertiportID = uVertiportReservation.VertiportID
 					updateSub = true
 				} else {
 					return stacktrace.NewErrorWithCode(dsserr.BadRequest, "Subscription does not cover the same vertiport than the OperationalIntent")
 				}
 			}
 
-			if sub.VertiportZone != uExtent.VertiportZone {
+			if sub.VertiportZone != uVertiportReservation.VertiportZone {
 				if sub.ImplicitSubscription {
-					sub.VertiportZone = uExtent.VertiportZone
+					sub.VertiportZone = uVertiportReservation.VertiportZone
 					updateSub = true
 				} else {
 					return stacktrace.NewErrorWithCode(dsserr.BadRequest, "Subscription does not cover the same vertiport zone than the OperationalIntent")
@@ -424,7 +423,7 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 
 			// Identify OperationalIntents missing from the key
 			var missingOps []*vrpmodels.VertiportOperationalIntent
-			relevantOps, err := r.SearchVertiportOperationalIntents(ctx, uExtent)
+			relevantOps, err := r.SearchVertiportOperationalIntents(ctx, uVertiportReservation)
 			if err != nil {
 				return stacktrace.Propagate(err, "Unable to SearchOperations")
 			}
@@ -440,7 +439,7 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 			// Identify Constraints missing from the key
 			var missingConstraints []*vrpmodels.VertiportConstraint
 			if sub.NotifyForConstraints {
-				constraints, err := r.SearchVertiportConstraints(ctx, uExtent)
+				constraints, err := r.SearchVertiportConstraints(ctx, uVertiportReservation)
 				if err != nil {
 					return stacktrace.Propagate(err, "Unable to SearchConstraints")
 				}
@@ -471,10 +470,10 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 			Manager: manager,
 			Version: vrpmodels.VersionNumber(version + 1),
 
-			StartTime:     uExtent.StartTime,
-			EndTime:       uExtent.EndTime,
-			VertiportID:   uExtent.VertiportID,
-			VertiportZone: uExtent.VertiportZone,
+			StartTime:     uVertiportReservation.StartTime,
+			EndTime:       uVertiportReservation.EndTime,
+			VertiportID:   uVertiportReservation.VertiportID,
+			VertiportZone: uVertiportReservation.VertiportZone,
 
 			USSBaseURL:     params.UssBaseUrl,
 			SubscriptionID: sub.ID,
@@ -485,23 +484,6 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 			return stacktrace.Propagate(err, "Error validating time range")
 		}
 
-		// Compute total affected Volume4D for notification purposes
-		//var notifyVol4 *dssmodels.VertiportReservation
-		//if old == nil {
-		//	notifyVol4 = uExtent
-		//} else {
-		//	oldVol4 := &dssmodels.VertiportReservation{
-		//		StartTime: old.StartTime,
-		//		EndTime:   old.EndTime,
-		//        VertiportID: old.VertiportID,
-		//        VertiportZone: old.VertiportZone,
-		//		}}
-		//	notifyVol4, err = dssmodels.UnionVolumes4D(uExtent, oldVol4)
-		//	if err != nil {
-		//		return stacktrace.Propagate(err, "Error constructing 4D volumes union")
-		//	}
-		//}
-
 		// Upsert the OperationalIntent
 		op, err = r.UpsertVertiportOperationalIntent(ctx, op)
 		if err != nil {
@@ -509,7 +491,7 @@ func (a *Server) PutVertiportOperationalIntentReference(ctx context.Context, ent
 		}
 
 		// Find Subscriptions that may need to be notified
-		allsubs, err := r.SearchVertiportSubscriptions(ctx, uExtent)
+		allsubs, err := r.SearchVertiportSubscriptions(ctx, uVertiportReservation)
 		if err != nil {
 			return err
 		}

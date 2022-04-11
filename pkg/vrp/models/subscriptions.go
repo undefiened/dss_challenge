@@ -137,7 +137,7 @@ func (s *VertiportSubscription) ValidateDependentOps(operationalIntents []*Verti
 
 // ValidateDependentOp validates subscription against single operation in all 4 dimensions
 func (s *VertiportSubscription) ValidateDependentOp(operationalIntent *VertiportOperationalIntent) error {
-	// validate 2d area
+	// validate vertiport id
 	if s.VertiportID != operationalIntent.VertiportID {
 		return stacktrace.NewError("VertiportSubscription does not cover the same , %s", operationalIntent.ID)
 	}

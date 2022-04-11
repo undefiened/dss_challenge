@@ -52,17 +52,17 @@ func (a *Server) PutVertiportSubscription(ctx context.Context, subscriptionid st
 		return nil, stacktrace.NewErrorWithCode(dsserr.PermissionDenied, "Missing vertiportid")
 	}
 
-	vertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(params.VertiportReservation)
+	uVertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(params.VertiportReservation)
 
 	subreq := &vrpmodels.VertiportSubscription{
 		ID:      id,
 		Manager: manager,
 		Version: vrpmodels.OVN(version),
 
-		StartTime:     vertiportReservation.StartTime,
-		EndTime:       vertiportReservation.EndTime,
-		VertiportID:   vertiportReservation.VertiportID,
-		VertiportZone: vertiportReservation.VertiportZone,
+		StartTime:     uVertiportReservation.StartTime,
+		EndTime:       uVertiportReservation.EndTime,
+		VertiportID:   uVertiportReservation.VertiportID,
+		VertiportZone: uVertiportReservation.VertiportZone,
 
 		USSBaseURL:                  params.UssBaseUrl,
 		NotifyForOperationalIntents: params.NotifyForOperationalIntents,
@@ -176,7 +176,7 @@ func (a *Server) PutVertiportSubscription(ctx context.Context, subscriptionid st
 
 		if sub.NotifyForConstraints {
 			// Query relevant Constraints
-			constraints, err := r.SearchVertiportConstraints(ctx, vertiportReservation)
+			constraints, err := r.SearchVertiportConstraints(ctx, uVertiportReservation)
 			if err != nil {
 				return stacktrace.Propagate(err, "Could not search Constraints in repo")
 			}
@@ -279,7 +279,7 @@ func (a *Server) QueryVertiportSubscriptions(ctx context.Context, req *vrppb.Que
 		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing vertiportid")
 	}
 
-	reservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
+	vertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(vroi)
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to convert to internal geometry model")
 	}
@@ -293,7 +293,7 @@ func (a *Server) QueryVertiportSubscriptions(ctx context.Context, req *vrppb.Que
 	var response *vrppb.QueryVertiportSubscriptionsResponse
 	action := func(ctx context.Context, r repos.Repository) (err error) {
 		// Perform search query on Store
-		subs, err := r.SearchVertiportSubscriptions(ctx, reservation)
+		subs, err := r.SearchVertiportSubscriptions(ctx, vertiportReservation)
 		if err != nil {
 			return stacktrace.Propagate(err, "Error searching Subscriptions in repo")
 		}

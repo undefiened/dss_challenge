@@ -42,7 +42,7 @@ func (a *Server) DeleteVertiportConstraintReference(ctx context.Context, req *vr
 				"Constraint owned by %s, but %s attempted to delete", old.Manager, manager)
 		}
 
-		// Find Subscriptions that may overlap the Constraint's Volume4D
+		// Find Subscriptions that may overlap the Constraint's vertiport reservation
 		allsubs, err := r.SearchVertiportSubscriptions(ctx, &dssmodels.VertiportReservation{
 			StartTime:     old.StartTime,
 			EndTime:       old.EndTime,
@@ -178,17 +178,17 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 		}
 	}
 
-	extent := params.GetVertiportReservation()
-	uExtent, err := dssmodels.VertiportReservationFromVRPProto(extent)
+	reservation := params.GetVertiportReservation()
+	uVertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(reservation)
 	if err != nil {
 		return nil, stacktrace.PropagateWithCode(err, dsserr.BadRequest, "Failed to parse vertiport reservation")
 	}
 
-	if uExtent.StartTime == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_start from extents")
+	if uVertiportReservation.StartTime == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_start from the reservation")
 	}
-	if uExtent.EndTime == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_end from extents")
+	if uVertiportReservation.EndTime == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing time_end the reservation")
 	}
 
 	var response *vrppb.ChangeVertiportConstraintReferenceResponse
@@ -219,8 +219,8 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 			version = int32(old.Version)
 		}
 
-		var notifyVol4 *dssmodels.VertiportReservation
-		notifyVol4 = uExtent
+		var notifyVertiportReservation *dssmodels.VertiportReservation
+		notifyVertiportReservation = uVertiportReservation
 
 		// Upsert the Constraint
 		constraint, err := r.UpsertVertiportConstraint(ctx, &vrpmodels.VertiportConstraint{
@@ -228,10 +228,10 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 			Manager: manager,
 			Version: vrpmodels.VersionNumber(version + 1),
 
-			StartTime:     uExtent.StartTime,
-			EndTime:       uExtent.EndTime,
-			VertiportZone: uExtent.VertiportZone,
-			VertiportID:   uExtent.VertiportID,
+			StartTime:     uVertiportReservation.StartTime,
+			EndTime:       uVertiportReservation.EndTime,
+			VertiportZone: uVertiportReservation.VertiportZone,
+			VertiportID:   uVertiportReservation.VertiportID,
 
 			USSBaseURL: params.UssBaseUrl,
 		})
@@ -240,7 +240,7 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 		}
 
 		// Find Subscriptions that may need to be notified
-		allsubs, err := r.SearchVertiportSubscriptions(ctx, notifyVol4)
+		allsubs, err := r.SearchVertiportSubscriptions(ctx, notifyVertiportReservation)
 		if err != nil {
 			return err
 		}
@@ -286,13 +286,12 @@ func (a *Server) PutVertiportConstraintReference(ctx context.Context, entityid s
 // bounds.
 func (a *Server) QueryVertiportConstraintReferences(ctx context.Context, req *vrppb.QueryVertiportConstraintReferencesRequest) (*vrppb.QueryVertiportConstraintReferencesResponse, error) {
 	// Retrieve the reservation of interest parameter
-	aoi := req.GetParams().ReservationOfInterest
-	if aoi == nil {
-		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing area_of_interest")
+	roi := req.GetParams().ReservationOfInterest
+	if roi == nil {
+		return nil, stacktrace.NewErrorWithCode(dsserr.BadRequest, "Missing reservation_of_interest")
 	}
 
-	// Parse area of interest to common Volume4D
-	vol4, err := dssmodels.VertiportReservationFromVRPProto(aoi)
+	vertiportReservation, err := dssmodels.VertiportReservationFromVRPProto(roi)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +305,7 @@ func (a *Server) QueryVertiportConstraintReferences(ctx context.Context, req *vr
 	var response *vrppb.QueryVertiportConstraintReferencesResponse
 	action := func(ctx context.Context, r repos.Repository) (err error) {
 		// Perform search query on Store
-		constraints, err := r.SearchVertiportConstraints(ctx, vol4)
+		constraints, err := r.SearchVertiportConstraints(ctx, vertiportReservation)
 		if err != nil {
 			return err
 		}

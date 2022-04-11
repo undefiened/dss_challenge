@@ -272,7 +272,7 @@ func (c *repo) DeleteVertiportSubscription(ctx context.Context, id dssmodels.ID)
 }
 
 // Implements SubscriptionStore.SearchSubscriptions
-func (c *repo) SearchVertiportSubscriptions(ctx context.Context, v4d *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportSubscription, error) {
+func (c *repo) SearchVertiportSubscriptions(ctx context.Context, reservation *dssmodels.VertiportReservation) ([]*vrpmodels.VertiportSubscription, error) {
 	var (
 		query = fmt.Sprintf(`
 			SELECT
@@ -289,7 +289,7 @@ func (c *repo) SearchVertiportSubscriptions(ctx context.Context, v4d *dssmodels.
 	)
 
 	subscriptions, err := c.fetchSubscriptions(
-		ctx, c.q, query, v4d.VertiportID, v4d.VertiportZone, v4d.StartTime, v4d.EndTime, dssmodels.MaxResultLimit)
+		ctx, c.q, query, reservation.VertiportID, reservation.VertiportZone, reservation.StartTime, reservation.EndTime, dssmodels.MaxResultLimit)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "Unable to fetch Subscriptions")
 	}

@@ -1,5 +1,5 @@
 """
-
+Test Eurocontrol's dataset'
 """
 
 import datetime
@@ -7,7 +7,7 @@ import itertools
 from typing import Literal
 import pandas as pd
 
-from monitoring.prober.infrastructure import depends_on, register_resource_type, IDFactory
+from monitoring.prober.infrastructure import depends_on, IDFactory
 from monitoring.monitorlib.infrastructure import DSSTestSession
 from monitoring.monitorlib.typing import ImplicitDict, StringBasedDateTime
 from monitoring.monitorlib.formatting import make_datetime
@@ -36,17 +36,17 @@ def read_vrp1_departures():
     for idx, row in vrp1_departures_df.iterrows():
         dest_vrp = 2 if not pd.isna(row['Destination Vertiport 2']) else 3
 
-        start_datetime_str = row['Start Vertiport 1']
-        start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
+        departure_datetime_str = row['Start Vertiport 1']
+        departure_datetime_obj = datetime.datetime.strptime(departure_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        end_datetime_str = row['Destination Vertiport 2'] \
+        arrival_datetime_str = row['Destination Vertiport 2'] \
             if dest_vrp==2 \
             else row['Destination Vertiport 3']
 
-        end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
+        arrival_datetime_obj = datetime.datetime.strptime(arrival_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
-        end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
+        departure_datetime_obj = departure_datetime_obj + datetime.timedelta(days=365)
+        arrival_datetime_obj = arrival_datetime_obj + datetime.timedelta(days=365)
 
         one_flight_dict = {
             "ID Departure": IDFactory('OP{}_{}_{}'.format(idx, 1, dest_vrp)).make_id(idx),
@@ -54,8 +54,8 @@ def read_vrp1_departures():
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 1,
             "Destination Vertiport": dest_vrp,
-            "Start Time": start_datetime_obj,
-            "End Time":  end_datetime_obj
+            "Departure Time": departure_datetime_obj,
+            "Arrival Time":  arrival_datetime_obj
         }
         vrp1_departures_list.append(one_flight_dict)
     return vrp1_departures_list
@@ -73,17 +73,17 @@ def read_vrp2_departures():
 
         dest_vrp = 1 if not pd.isna(row.loc['Destination Vertiport 1']) else 3
 
-        start_datetime_str = row['Start Vertiport 2']
-        start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
+        departure_datetime_str = row['Start Vertiport 2']
+        departure_datetime_obj = datetime.datetime.strptime(departure_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        end_datetime_str = row['Destination Vertiport 1'] \
+        arrival_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
             else row['Destination Vertiport 3']
 
-        end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
+        arrival_datetime_obj = datetime.datetime.strptime(arrival_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
-        end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
+        departure_datetime_obj = departure_datetime_obj + datetime.timedelta(days=365)
+        arrival_datetime_obj = arrival_datetime_obj + datetime.timedelta(days=365)
 
         one_flight_dict = {
             "ID Departure": IDFactory('OP{}_{}_{}'.format(idx, 2, dest_vrp)).make_id(idx),
@@ -91,8 +91,8 @@ def read_vrp2_departures():
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 2,
             "Destination Vertiport": dest_vrp,
-            "Start Time": start_datetime_obj,
-            "End Time":  end_datetime_obj
+            "Departure Time": departure_datetime_obj,
+            "Arrival Time":  arrival_datetime_obj
         }
         vrp2_departures_list.append(one_flight_dict)
     return vrp2_departures_list
@@ -110,17 +110,17 @@ def read_vrp3_departures():
 
         dest_vrp = 1 if not pd.isna(row['Destination Vertiport 1']) else 2
 
-        start_datetime_str = row['Start Vertiport 3']
-        start_datetime_obj = datetime.datetime.strptime(start_datetime_str, '%Y-%m-%d %H:%M:%S')
+        departure_datetime_str = row['Start Vertiport 3']
+        departure_datetime_obj = datetime.datetime.strptime(departure_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        end_datetime_str = row['Destination Vertiport 1'] \
+        arrival_datetime_str = row['Destination Vertiport 1'] \
             if dest_vrp==1 \
             else row['Destination Vertiport 2']
 
-        end_datetime_obj = datetime.datetime.strptime(end_datetime_str, '%Y-%m-%d %H:%M:%S')
+        arrival_datetime_obj = datetime.datetime.strptime(arrival_datetime_str, '%Y-%m-%d %H:%M:%S')
 
-        start_datetime_obj = start_datetime_obj + datetime.timedelta(days=20)
-        end_datetime_obj = end_datetime_obj + datetime.timedelta(days=20)
+        departure_datetime_obj = departure_datetime_obj + datetime.timedelta(days=365)
+        arrival_datetime_obj = arrival_datetime_obj + datetime.timedelta(days=365)
 
 
         one_flight_dict = {
@@ -129,8 +129,8 @@ def read_vrp3_departures():
             "Flight ID": row['Flight ID'],
             "Origin Vertiport": 3,
             "Destination Vertiport": dest_vrp,
-            "Start Time": start_datetime_obj,
-            "End Time":  end_datetime_obj
+            "Departure Time": departure_datetime_obj,
+            "Arrival Time":  arrival_datetime_obj
         }
         vrp3_departures_list.append(one_flight_dict)
     return vrp3_departures_list
@@ -145,8 +145,6 @@ def make_time(t: datetime) -> Time:
     return Time(value=t.isoformat() + 'Z', format='RFC3339')
 
 BASE_URL = 'https://example.com/uss'
-
-OP_TYPE = register_resource_type(213, 'Operational intent')
 
 
 def _make_op_request(vertiport_id, vertiport_zone, time_start, time_end):
@@ -192,10 +190,13 @@ def setup_module(vrp_session):
 
     VRP_DEPARTURES = sorted(
         list(itertools.chain(vrp1_departures, vrp2_departures, vrp3_departures)),
-        key=lambda x: x['Start Time']
+        key=lambda x: x['Departure Time']
     )
 
 
+# Delete Operations if exist
+# Preconditions: None
+# Mutations: Operations deleted if exist
 def test_ensure_clean_workspace(ids, vrp_session):
     for vrp_id in VERTIPORTS_IDS:
         resp = vrp_session.get('/{}'.format(vrp_id), scope=SCOPE_VRP)
@@ -210,18 +211,13 @@ def test_ensure_clean_workspace(ids, vrp_session):
         delete_operation_if_exists(operation['ID Arrival'], vrp_session)
 
 
+# Create vertiports
+# Preconditions: None
+# Mutations: vertiports created
 def test_create_vertiports(ids, vrp_session):
     for vrp_id in VERTIPORTS_IDS:
         resp = vrp_session.put('/{}'.format(vrp_id), json={'number_of_parking_places': 5}, scope=SCOPE_VRP)
         assert resp.status_code == 200, resp.content
-
-
-# Op shouldn't exist by ID
-# Preconditions: None
-# Mutations: None
-def test_op_does_not_exist_get(ids, vrp_session):
-    resp = vrp_session.get('/operational_intent_references/{}'.format(ids(OP_TYPE)), scope=SCOPE_VRP)
-    assert resp.status_code == 404, resp.content
 
 
 def find_first_available_time_period(time_periods):
@@ -272,32 +268,31 @@ def schedule_flights(vrp_session, orig_vrp_id, intended_start_time, planned_flig
     return real_time_start, real_time_arrival
 
 
-
-# Create Op
+# Create Operations (also create implicit Subscriptions)
 # Preconditions: None
-# Mutations: Operation Op created by vrp_session user
+# Mutations: Operations created by vrp_session user
 @depends_on(test_ensure_clean_workspace)
 def test_create_ops(ids, vrp_session):
     for ind, departure in enumerate(VRP_DEPARTURES):
         orig_vrp_id = VERTIPORTS_IDS[departure['Origin Vertiport'] - 1]
         dest_vrp_id = VERTIPORTS_IDS[departure['Destination Vertiport'] - 1]
-        intended_start_time = departure['Start Time']
-        planned_flight_time = departure['End Time'] - departure['Start Time']
+        intended_departure_time = departure['Departure Time']
+        planned_flight_time = departure['Arrival Time'] - departure['Departure Time']
 
         schedule_found = False
 
         while not schedule_found:
             try:
-                real_time_start, real_time_arrival = schedule_flights(vrp_session, orig_vrp_id, intended_start_time, planned_flight_time, dest_vrp_id)
+                real_time_departure, real_time_arrival = schedule_flights(vrp_session, orig_vrp_id, intended_departure_time, planned_flight_time, dest_vrp_id)
             except:
-                intended_start_time = intended_start_time + datetime.timedelta(minutes=DELAY_MIN)
+                intended_departure_time = intended_departure_time + datetime.timedelta(minutes=DELAY_MIN)
                 continue
 
             schedule_found = True
 
             # create operational intent for departure
             op_id = departure['ID Departure']
-            req = _make_op_request(orig_vrp_id, 0, real_time_start + datetime.timedelta(seconds=1), real_time_start + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
+            req = _make_op_request(orig_vrp_id, 0, real_time_departure + datetime.timedelta(seconds=1), real_time_departure + datetime.timedelta(minutes=RESERVATION_TIME_MIN))
             # print("ind: {} intended: {} from: {} to: {} data: {}".format(ind, intended_start_time, time_period[0], time_period[1], data))
             resp = vrp_session.put('/operational_intent_references/{}'.format(op_id), json=req, scope=SCOPE_VRP)
             assert resp.status_code == 200, resp.content
@@ -309,5 +304,8 @@ def test_create_ops(ids, vrp_session):
             assert resp.status_code == 200, resp.content
 
 
+# Ensure Operations do not exist
+# Preconditions: none
+# Mutations: Operations deleted if exist
 def test_final_cleanup(ids, vrp_session):
     test_ensure_clean_workspace(ids, vrp_session)
